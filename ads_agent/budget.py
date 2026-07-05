@@ -13,6 +13,14 @@ MMM_RECOMMENDED_WEEKLY = {
     "digital_video": 85_517.0,
 }
 
+# Also from notebook 02's constrained optimizer output. `social` is the MMM's
+# highest-percentage-growth recommendation of any channel (+75% vs. current
+# $175,997/week) but was never wired into the agentic layer until the Meta
+# Ads extension -- Google Ads has no way to spend against this channel.
+MMM_RECOMMENDED_WEEKLY_META = {
+    "social": 307_995.0,
+}
+
 
 @dataclass(frozen=True)
 class BudgetSplit:
@@ -49,4 +57,32 @@ def calculate_google_ads_split(total_daily_budget: float) -> BudgetSplit:
         pmax_daily_budget=round(total_daily_budget * pmax_share, 2),
         search_share=round(search_share, 4),
         pmax_share=round(pmax_share, 4),
+    )
+
+
+@dataclass(frozen=True)
+class MetaBudgetSplit:
+    """Daily budget for the v1 Meta Ads channel (a single Feed campaign type for now)."""
+
+    total_daily_budget: float
+    feed_daily_budget: float
+
+
+def calculate_meta_ads_split(total_daily_budget: float) -> MetaBudgetSplit:
+    """Scale a demo daily budget to the v1 Meta Ads envelope.
+
+    Unlike Google Ads (which splits one pool across Search/PMax), v1 Meta
+    support is a single Feed campaign, so there is nothing to split -- the
+    whole entered budget goes to that one campaign.
+    MMM_RECOMMENDED_WEEKLY_META["social"] is kept here so the plan's
+    executive summary can cite the real MMM number that justifies why Meta
+    gets budget in the first place.
+    """
+
+    if total_daily_budget <= 0:
+        raise ValueError("Total daily budget must be greater than 0.")
+
+    return MetaBudgetSplit(
+        total_daily_budget=round(total_daily_budget, 2),
+        feed_daily_budget=round(total_daily_budget, 2),
     )

@@ -20,9 +20,8 @@ placeholders with a text label, not real ad creative.
 
 from __future__ import annotations
 
-import io
-
 from ads_agent.google_ads_builders import _add_language_criteria, _create_budget, unique_campaign_name
+from ads_agent.placeholder_images import generate_placeholder_image
 from ads_agent.schemas import CampaignDraft
 
 _HEADLINE_MAX_CHARS = 30
@@ -37,17 +36,6 @@ _IMAGE_SPECS = [
     ("square_marketing_image", 1200, 1200, (52, 168, 83)),
     ("marketing_image", 1200, 628, (234, 67, 53)),
 ]
-
-
-def _generate_placeholder_image(width: int, height: int, label: str, color: tuple[int, int, int]) -> bytes:
-    from PIL import Image, ImageDraw
-
-    image = Image.new("RGB", (width, height), color=color)
-    draw = ImageDraw.Draw(image)
-    draw.multiline_text((20, 20), f"PLACEHOLDER\n{label}\n{width}x{height}", fill=(255, 255, 255))
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    return buffer.getvalue()
 
 
 def create_pmax_campaign(
@@ -162,7 +150,7 @@ def create_pmax_campaign(
         "marketing_image": client.enums.AssetFieldTypeEnum.MARKETING_IMAGE,
     }
     for label, width, height, color in _IMAGE_SPECS:
-        image_bytes = _generate_placeholder_image(width, height, label, color)
+        image_bytes = generate_placeholder_image(width, height, label, color)
 
         def build_image_asset(asset, data=image_bytes, name=f"{campaign_draft.name} {label} (placeholder)") -> None:
             asset.name = name

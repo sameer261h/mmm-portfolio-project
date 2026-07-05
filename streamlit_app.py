@@ -15,6 +15,9 @@ from ads_agent.analyst_tools import list_campaigns
 from ads_agent.audit import write_audit_event
 from ads_agent.google_ads_client import get_ads_client
 from ads_agent.guardrails import GuardrailError
+from ads_agent.meta_ads_client import get_meta_ads_client
+from ads_agent.meta_planner import generate_meta_campaign_plan
+from ads_agent.meta_schemas import MetaCampaignPlan
 from ads_agent.operator_agent import propose_change
 from ads_agent.planner import generate_campaign_plan
 from ads_agent.schemas import CampaignPlan, ChangeAction
@@ -33,6 +36,14 @@ def _plan_to_json(plan: CampaignPlan) -> str:
 
 def _plan_from_json(raw: str) -> CampaignPlan:
     return CampaignPlan.model_validate_json(raw)
+
+
+def _meta_plan_to_json(plan: MetaCampaignPlan) -> str:
+    return plan.model_dump_json(indent=2)
+
+
+def _meta_plan_from_json(raw: str) -> MetaCampaignPlan:
+    return MetaCampaignPlan.model_validate_json(raw)
 
 
 st.set_page_config(page_title="MMM Google Ads Agent", layout="wide")
@@ -244,3 +255,114 @@ if st.session_state.change_ticket:
         if st.button("Reject"):
             st.session_state.change_ticket = None
             st.info("Change rejected -- nothing was applied.")
+
+st.divider()
+st.subheader("Meta Ads (Phase 6, unverified)")
+st.caption(
+    "Activates the MMM's `social` channel recommendation ($307,995/week, +75% vs. "
+    "current -- the strongest growth signal of any channel), which the Google Ads "
+    "flow above never touches. Same paused-only, human-approval pattern as Google "
+    "Ads. Unlike Google, Meta has no free test account -- real writes are blocked "
+    "until Sameer creates a Business Manager, App, Ad Account, and Page (see "
+    "META_ADS_AGENT_PLAN.md), so this defaults to mock mode everywhere it runs."
+)
+
+with st.sidebar:
+    st.write(f"Meta Ads mutate enabled: `{os.getenv('META_ADS_MUTATE_ENABLED', 'false')}`")
+
+meta_col_a, meta_col_b = st.columns(2)
+with meta_col_a:
+    meta_business_name = st.text_input("Business name (Meta)", value=business_name, key="meta_business_name")
+    meta_total_daily_budget = st.number_input(
+        "Total Meta Ads daily budget",
+        min_value=1.0,
+        max_value=_max_daily_budget(),
+        value=50.0,
+        step=10.0,
+    )
+    meta_landing_page_url = st.text_input(
+        "Landing page URL (Meta)", value=landing_page_url, key="meta_landing_page_url"
+    )
+
+with meta_col_b:
+    meta_product_category = st.text_input(
+        "Product category (Meta)", value=product_category, key="meta_product_category"
+    )
+    meta_offer = st.text_input("Offer or campaign angle (Meta)", value=offer, key="meta_offer")
+    meta_geo_target = st.text_input("Geo target (Meta)", value=geo_target, key="meta_geo_target")
+
+if "meta_plan_json" not in st.session_state:
+    st.session_state.meta_plan_json = ""
+
+if st.button("Generate Meta plan", type="primary"):
+    try:
+        meta_plan = generate_meta_campaign_plan(
+            business_name=meta_business_name,
+            total_daily_budget=float(meta_total_daily_budget),
+            landing_page_url=meta_landing_page_url,
+            product_category=meta_product_category,
+            offer=meta_offer,
+            geo_target=meta_geo_target,
+        )
+        st.session_state.meta_plan_json = _meta_plan_to_json(meta_plan)
+        write_audit_event("meta_plan_generated", meta_plan.model_dump())
+        st.success("Meta campaign plan generated.")
+    except (ValidationError, ValueError) as exc:
+        st.error(f"Could not generate a valid Meta campaign plan: {exc}")
+
+if st.session_state.meta_plan_json:
+    st.subheader("Agent rationale and editable Meta campaign plan")
+    edited_meta_json = st.text_area(
+        "Edit the Meta plan JSON before approval",
+        value=st.session_state.meta_plan_json,
+        height=420,
+    )
+
+    try:
+        edited_meta_plan = _meta_plan_from_json(edited_meta_json)
+        st.session_state.meta_plan_json = edited_meta_json
+
+        st.markdown("**Executive summary**")
+        st.write(edited_meta_plan.executive_summary)
+        st.markdown("**MMM budget logic**")
+        st.write(edited_meta_plan.mmm_summary)
+
+        meta_rows = [
+            {
+                "campaign": campaign.name,
+                "objective": campaign.objective.value,
+                "budget": campaign.daily_budget,
+                "status": campaign.status.value,
+                "editable": ", ".join(campaign.editable_parameters),
+            }
+            for campaign in edited_meta_plan.campaigns
+        ]
+        st.dataframe(meta_rows, use_container_width=True)
+
+        meta_col_create, meta_col_enable = st.columns(2)
+        with meta_col_create:
+            if st.button("Create paused Meta campaigns"):
+                try:
+                    result = get_meta_ads_client().create_paused_campaigns(
+                        edited_meta_plan,
+                        max_daily_budget=_max_daily_budget(),
+                    )
+                    st.success(result.message)
+                    st.json(result.operations)
+                except (GuardrailError, RuntimeError, NotImplementedError) as exc:
+                    st.error(str(exc))
+
+        with meta_col_enable:
+            if st.button("Enable Meta campaigns after approval"):
+                try:
+                    result = get_meta_ads_client().enable_campaigns(edited_meta_plan)
+                    st.warning(result.message)
+                    st.json(result.operations)
+                except (GuardrailError, RuntimeError, NotImplementedError) as exc:
+                    st.error(str(exc))
+
+        with st.expander("Raw validated Meta plan"):
+            st.json(json.loads(edited_meta_plan.model_dump_json()))
+
+    except ValidationError as exc:
+        st.error(f"Edited Meta plan JSON is not valid yet: {exc}")

@@ -40,8 +40,19 @@ The MMM's recommended budget is the **strategic layer**; this agent is the **tac
 | 2 — Analyst agent | Answers questions ("why did CPA rise?") by autonomously deciding which read-only tool to call — zero write access | ✅ Live |
 | 3 — Operator agent | Proposes budget/pause/negative-keyword changes as a structured ticket; **only applies after human approval** | ✅ Live |
 | 4 — Real campaign creation | Actual Google Ads API calls (Search + Performance Max) against a real test account | ✅ Verified live |
+| 6 — Meta Ads | Same planner → paused-campaign → approval-gate pattern, activating the MMM's `social` budget on Facebook/Instagram | 🟡 Built, mock-mode only — real API pending Meta account setup |
 
 **What makes it agentic, specifically:** the analyst agent decides *which* of four tools to call based on the question, reads the results, and can call another tool based on what it learned before answering — a genuine reason → act → observe loop, not a single prompt-response call. The operator agent reasons over live account state to decide *what* action to propose and *which* campaign to target. Both feed into real, gated, real-world actions (Phase 4), not just generated text.
+
+**Tools / Skills / Evals / Levels — honest breakdown, not marketing:**
+
+| | Planner (Phase 1/6) | Analyst (Phase 2) | Operator (Phase 3) |
+|---|---|---|---|
+| **Tools** | none — one structured-output call | `list_campaigns`, `get_performance`, `get_search_terms`, `get_budget_pacing` (read-only) | reads the same 4 tools, writes via `update_campaign_budget` / `pause_campaign` / `add_negative_keyword` (human-gated) |
+| **Skill** | `SYSTEM_PROMPT` in `planner.py` / `meta_planner.py`: draft a paused campaign from a budget envelope | `SYSTEM_PROMPT` in `analyst_agent.py`: answer performance questions using only read tools | `SYSTEM_PROMPT` in `operator_agent.py`: propose one change as a `ChangeTicket`, never apply it |
+| **Level** | **L1** — single prompt → structured response, no tool loop, no state | **L2** — the model decides which tool(s) to call and can chain a second call on what it learns | **L3** — observes account state, plans a proposal, but a human approves before anything real happens |
+
+**Evals — the honest gap:** the 37 pytest tests check *code correctness* (schema validation, guardrail math, mock writes) — they are not evals. There is currently no harness that runs a fixed set of representative requests through the analyst/operator and scores whether the *tool choice or proposed action was actually good*, only whether the code executed without crashing. Flagged here deliberately rather than glossed over — a real next step, not a solved problem.
 
 **Safety design:**
 - Every write path enforces hard guardrails in code (budget caps, daily rate limit, action allowlist) — not just prompt instructions
@@ -55,11 +66,14 @@ ads_agent/
 ├── operator_state.py / operator_agent.py                   — Phase 3
 ├── guardrails.py              — hard safety checks, independent of the LLM
 ├── google_ads_client.py       — Mock (default) / Real client switch
-└── google_ads_builders.py / google_ads_pmax_builders.py    — Phase 4: real API calls
-streamlit_app.py               — the UI tying all four phases together
+├── google_ads_builders.py / google_ads_pmax_builders.py    — Phase 4: real API calls
+├── placeholder_images.py      — shared placeholder-image generator (Google PMax + Meta)
+└── meta_schemas.py / meta_planner.py / meta_ads_client.py / meta_ads_builders.py
+                                — Phase 6: same pattern, extended to Meta (Facebook/Instagram) Ads
+streamlit_app.py               — the UI tying all phases together
 ```
 
-Full build history, every real bug found via live testing, and current status: see `HANDOFF.md` and `GOOGLE_ADS_AGENT_PLAN.md`.
+Full build history, every real bug found via live testing, and current status: see `HANDOFF.md`, `GOOGLE_ADS_AGENT_PLAN.md`, and `META_ADS_AGENT_PLAN.md`.
 
 ---
 
@@ -70,6 +84,7 @@ mmm-portfolio-project/
 ├── README.md                  ← you are here
 ├── HANDOFF.md                 ← full session-by-session build log (read this for current status)
 ├── GOOGLE_ADS_AGENT_PLAN.md   ← Track 2 phase-by-phase plan + status
+├── META_ADS_AGENT_PLAN.md     ← Track 2 Phase 6 (Meta Ads) plan + status
 ├── LEARNING_GUIDE.md          ← MMM concepts + interview prep
 ├── requirements.txt / requirements-cloudrun.txt
 ├── Dockerfile                 ← Cloud Run deployment

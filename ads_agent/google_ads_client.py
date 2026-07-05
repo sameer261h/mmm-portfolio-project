@@ -2,12 +2,10 @@
 
 The mock connector is the default portfolio path and is what runs whenever
 GOOGLE_ADS_MUTATE_ENABLED is not exactly "true" (the default). The real
-connector talks to the actual Google Ads API -- built against the documented
-API shape, but NOT YET LIVE-VERIFIED: Sameer's test accounts were still
-provisioning ("not yet enabled") on Google's side as of 2026-07-05, so none of
-this could be run against a live account yet. Treat every RealGoogleAdsClient
-method as best-effort correct until it's been run once for real and any
-errors ironed out -- see HANDOFF.md's status log for the exact blocker.
+connector talks to the actual Google Ads API -- CONFIRMED WORKING (2026-07-05):
+verified live against a real Google Ads test account, including both Search
+and Performance Max paused campaign creation. See HANDOFF.md's status log
+for the real bugs found and fixed along the way.
 """
 
 from __future__ import annotations
@@ -186,11 +184,9 @@ def _build_googleads_client():
 
 
 class RealGoogleAdsClient:
-    """Live Google Ads mutation. UNVERIFIED against a real account as of
-    2026-07-05 -- Sameer's test accounts hadn't finished activating on
-    Google's side, so none of this has actually been run yet. Built as
-    correctly as possible from the documented API shape; expect to need a
-    debugging pass once the test account is live (see HANDOFF.md)."""
+    """Live Google Ads mutation. CONFIRMED WORKING (2026-07-05) against a
+    real Google Ads test account -- see HANDOFF.md's status log for the
+    real bugs found and fixed during live verification."""
 
     def __init__(self) -> None:
         if os.getenv("GOOGLE_ADS_MUTATE_ENABLED", "false").lower() != "true":

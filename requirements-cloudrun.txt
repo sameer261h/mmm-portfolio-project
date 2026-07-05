@@ -9,4 +9,5 @@ openai
 pydantic
 python-dotenv
 google-ads
+facebook-business
 Pillow

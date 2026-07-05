@@ -13,6 +13,7 @@ jupyterlab
 streamlit
 openai
 google-ads
+facebook-business
 pydantic
 python-dotenv
 pytest

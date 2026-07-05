@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from ads_agent.audit import read_audit_events
+from ads_agent.meta_schemas import MetaCampaignPlan
 from ads_agent.schemas import CampaignPlan, CampaignStatus, CampaignType
 
 # Phase 3 write guardrails. These are deliberately hardcoded, not
@@ -54,6 +55,43 @@ def validate_plan_for_paused_creation(plan: CampaignPlan, max_daily_budget: floa
 
 def validate_enable_request(plan: CampaignPlan) -> None:
     """Validate the separate approval step before enabling campaigns."""
+
+    if not plan.campaigns:
+        raise GuardrailError("No campaigns are available to enable.")
+
+
+def validate_meta_plan_for_paused_creation(plan: MetaCampaignPlan, max_daily_budget: float) -> None:
+    """Validate that a plan is safe to create as paused Meta campaigns.
+
+    Mirrors validate_plan_for_paused_creation's checks for the Meta-shaped
+    plan/campaign structure (creative assets instead of pmax_assets/search_ad).
+    """
+
+    if plan.total_daily_budget <= 0:
+        raise GuardrailError("Total daily budget must be greater than 0.")
+    if plan.total_daily_budget > max_daily_budget:
+        raise GuardrailError(
+            f"Total daily budget ${plan.total_daily_budget:,.2f} exceeds "
+            f"the configured cap of ${max_daily_budget:,.2f}."
+        )
+
+    planned_budget = sum(campaign.daily_budget for campaign in plan.campaigns)
+    if abs(planned_budget - plan.total_daily_budget) > 0.05:
+        raise GuardrailError(
+            "Campaign budgets must add up to the approved total daily budget."
+        )
+
+    for campaign in plan.campaigns:
+        if campaign.status != CampaignStatus.PAUSED:
+            raise GuardrailError("Campaigns must be created in PAUSED status.")
+        if "delete" in campaign.name.lower():
+            raise GuardrailError("Delete-style operations are not allowed.")
+        if not campaign.creative.headlines:
+            raise GuardrailError("Meta campaign is missing required creative headlines.")
+
+
+def validate_meta_enable_request(plan: MetaCampaignPlan) -> None:
+    """Validate the separate approval step before enabling Meta campaigns."""
 
     if not plan.campaigns:
         raise GuardrailError("No campaigns are available to enable.")

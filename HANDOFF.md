@@ -25,7 +25,8 @@ re-verified against the live repo, not copied blind from the previous version.
 ```
 /AGENTS.md                     — Codex-specific working instructions (mirrors this file's "how to work with him" section)
 /HANDOFF.md                    — this file
-/GOOGLE_ADS_AGENT_PLAN.md      — full Track 2 build plan + its own status log
+/GOOGLE_ADS_AGENT_PLAN.md      — full Track 2 (Google Ads) build plan + its own status log
+/META_ADS_AGENT_PLAN.md        — Track 2 Phase 6 (Meta Ads) build plan + its own status log
 /README.md                     — project overview / setup for a human reader
 /LEARNING_GUIDE.md             — teaching-style notes (story-first explanations used so far)
 /MMM_Project_Guide.pdf         — generated study guide (PDF)
@@ -54,6 +55,11 @@ re-verified against the live repo, not copied blind from the previous version.
   google_ads_client.py         — MockGoogleAdsClient (default) / RealGoogleAdsClient (blocked until Phase 0 + explicit env flag) / get_ads_client()
   audit.py                     — write_audit_event() → appends to audit_log.jsonl
   audit_log.jsonl              — append-only log of every plan generated / mock action taken (gitignored, currently has 4 entries from testing)
+  placeholder_images.py        — generate_placeholder_image(): shared by the Google PMax and Meta builders (no real ad creative in this project)
+  meta_schemas.py              — Phase 6: pydantic models for Meta campaign plans, mirrors schemas.py's shape for Meta's Campaign->Ad Set->Ad structure
+  meta_planner.py              — Phase 6: generate_meta_campaign_plan(), same OpenAI/fallback pattern as planner.py
+  meta_ads_client.py           — Phase 6: MockMetaAdsClient / RealMetaAdsClient (UNVERIFIED) / get_meta_ads_client()
+  meta_ads_builders.py         — Phase 6: real Meta Marketing API calls via facebook-business SDK (UNVERIFIED, no Meta account exists yet)
 
 /tests/
   conftest.py                  — pytest fixtures (see below)
@@ -534,6 +540,25 @@ approval, deployed on Cloud Run."
   campaigns accumulated from this debugging process (harmless — test
   account, no spend, no real ads — but worth knowing they're there if
   Sameer looks at the account directly).
+
+- 2026-07-05 (same day): **Extended the agentic layer to Meta (Facebook/Instagram)
+  Ads — Phase 6, see `META_ADS_AGENT_PLAN.md`.** The MMM's `social` channel
+  ($307,995/week recommended, +75% vs. current — the strongest growth signal of
+  any channel) had never been wired into the agentic layer at all; only
+  `search`/`display`/`digital_video` fed Google Ads. Built as a fully parallel
+  track (`ads_agent/meta_schemas.py`, `meta_planner.py`, `meta_ads_client.py`,
+  `meta_ads_builders.py`), mirroring the Google Ads Phase 1/4 pattern exactly,
+  rather than touching the existing, already-verified-live Google Ads
+  schemas/planner/client — kept those at zero risk. Also extracted the
+  placeholder-image generator (previously private to
+  `google_ads_pmax_builders.py`) into a shared `ads_agent/placeholder_images.py`,
+  the one touch to existing Google Ads code (pure refactor, re-verified the
+  existing test suite passed unchanged). Added a "Meta Ads (Phase 6,
+  unverified)" section to `streamlit_app.py`. Sameer confirmed he has no Meta
+  Business Manager / developer App / Ad Account / Page yet, so everything was
+  built and tested in mock mode; the real-API builder is explicitly marked
+  UNVERIFIED and will need a live debugging pass once those accounts exist —
+  see `META_ADS_AGENT_PLAN.md`'s Phase 0 for the exact setup steps.
 
 ---
 
