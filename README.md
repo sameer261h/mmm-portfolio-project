@@ -1,13 +1,15 @@
-# Marketing Mix Model + Agentic Google Ads System — Portfolio Project
+# Marketing Mix Model + Agentic Ads System — Portfolio Project
+
+**In one sentence:** a statistical model decides *how much* budget each marketing channel deserves, and an agentic system decides *what to actually do about it* — draft the campaigns, watch performance, propose changes — with a human approving every real action.
 
 Two portfolio pieces in one repo, deliberately kept separate in framing:
 
 1. **A Bayesian Marketing Mix Model** (classical statistics — PyMC-Marketing) that quantifies channel ROI and recommends a budget reallocation.
-2. **An agentic Google Ads system** built on top of it — campaign planning, a read-only analyst agent, an operator agent with human-approval-gated writes, and real Google Ads API campaign creation.
+2. **An agentic system** built on top of it — campaign planning, a read-only analyst agent, an operator agent with human-approval-gated writes, and real Google Ads + Meta Ads API campaign creation.
 
-**Honest framing (deliberate, not a hedge):** the MMM is classical statistics, not AI. The agentic AI is entirely in the Google Ads layer. Keeping this distinction clear is what makes the story credible in an interview rather than oversold.
+**Honest framing (deliberate, not a hedge):** the MMM is classical statistics, not AI. The agentic AI is entirely in the layer built on top of it. Keeping this distinction clear is what makes the story credible in an interview rather than oversold — same reason the [Tools/Skills/Evals/Levels breakdown below](#tools--skills--evals--levels) names an honest gap instead of hiding it.
 
-**Live demo:** https://mmm-ads-agent-818953231119.us-central1.run.app (public, no login — click "Generate plan" or ask the analyst a question)
+**Quick links for reviewers:** [Live demo](https://mmm-ads-agent-818953231119.us-central1.run.app) (no login) · [Track 1 notebooks](notebooks/) · [Track 2 code](ads_agent/) · [Full build log](HANDOFF.md)
 
 ---
 
@@ -27,12 +29,12 @@ notebooks/02_build_mmm.ipynb          ← build, validate, and use the model
 
 ---
 
-## Track 2 — Agentic Google Ads system
+## Track 2 — Agentic ads system (Google Ads + Meta Ads)
 
 **Resume bullet:**
-> Built an agentic Google Ads analyst/operator on top with human-in-the-loop approval, deployed on Cloud Run.
+> Built an agentic ads analyst/operator on top with human-in-the-loop approval across Google Ads and Meta Ads, deployed on Cloud Run.
 
-The MMM's recommended budget is the **strategic layer**; this agent is the **tactical layer** that turns it into actual Google Ads actions — with a human approval gate before anything real happens.
+The MMM's recommended budget is the **strategic layer**; this agent is the **tactical layer** that turns it into actual Google Ads and Meta Ads actions — with a human approval gate before anything real happens.
 
 | Phase | What it does | Status |
 |---|---|---|
@@ -44,7 +46,9 @@ The MMM's recommended budget is the **strategic layer**; this agent is the **tac
 
 **What makes it agentic, specifically:** the analyst agent decides *which* of four tools to call based on the question, reads the results, and can call another tool based on what it learned before answering — a genuine reason → act → observe loop, not a single prompt-response call. The operator agent reasons over live account state to decide *what* action to propose and *which* campaign to target. Both feed into real, gated, real-world actions (Phase 4), not just generated text.
 
-**Tools / Skills / Evals / Levels — honest breakdown, not marketing:**
+### Tools / Skills / Evals / Levels
+
+Honest breakdown, not marketing — what each agent can actually do, named per [OpenAI's Skills/Evals framing](https://developers.openai.com/blog/eval-skills) and [Vellum's L0–L6 agentic-behavior levels](https://www.vellum.ai/blog/levels-of-agentic-behavior):
 
 | | Planner (Phase 1/6) | Analyst (Phase 2) | Operator (Phase 3) |
 |---|---|---|---|
@@ -57,7 +61,7 @@ The MMM's recommended budget is the **strategic layer**; this agent is the **tac
 **Safety design:**
 - Every write path enforces hard guardrails in code (budget caps, daily rate limit, action allowlist) — not just prompt instructions
 - Nothing is ever auto-enabled; campaigns are always created `PAUSED`
-- Defaults to mock mode (`GOOGLE_ADS_MUTATE_ENABLED=false`) everywhere, including the public demo — the real API path is a deliberate, explicit opt-in
+- Defaults to mock mode (`GOOGLE_ADS_MUTATE_ENABLED=false`, `META_ADS_MUTATE_ENABLED=false`) everywhere, including the public demo — the real API path is a deliberate, explicit opt-in
 
 ```
 ads_agent/
@@ -82,10 +86,10 @@ Full build history, every real bug found via live testing, and current status: s
 ```
 mmm-portfolio-project/
 ├── README.md                  ← you are here
+├── LICENSE                    ← MIT
 ├── HANDOFF.md                 ← full session-by-session build log (read this for current status)
 ├── GOOGLE_ADS_AGENT_PLAN.md   ← Track 2 phase-by-phase plan + status
 ├── META_ADS_AGENT_PLAN.md     ← Track 2 Phase 6 (Meta Ads) plan + status
-├── LEARNING_GUIDE.md          ← MMM concepts + interview prep
 ├── requirements.txt / requirements-cloudrun.txt
 ├── Dockerfile                 ← Cloud Run deployment
 ├── streamlit_app.py           ← Track 2 UI
@@ -93,9 +97,13 @@ mmm-portfolio-project/
 ├── tests/                     ← pytest suite for ads_agent/
 ├── data/
 │   └── DATA_DICTIONARY.md
-└── notebooks/
-    ├── 01_data_exploration.ipynb
-    └── 02_build_mmm.ipynb
+├── notebooks/
+│   ├── 01_data_exploration.ipynb
+│   └── 02_build_mmm.ipynb
+└── docs/                      ← supplementary reading, kept out of the root on purpose
+    ├── LEARNING_GUIDE.md      ← MMM concepts + interview prep
+    ├── DESIGN_DOCUMENTATION.md
+    └── MMM_Project_Guide.pdf / MMM_Study_Guide.html
 ```
 
 ## Setup (one time, ~15 min)

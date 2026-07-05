@@ -1,7 +1,7 @@
 # HANDOFF — Read this first (context for any new Claude session)
 
 If you are Claude starting fresh: read this file, then README.md and
-GOOGLE_ADS_AGENT_PLAN.md. That's the full context. Skim LEARNING_GUIDE.md to see
+GOOGLE_ADS_AGENT_PLAN.md. That's the full context. Skim docs/LEARNING_GUIDE.md to see
 the teaching style that works.
 
 This file was rewritten from scratch on 2026-07-05 after a Codex CLI session was
@@ -28,13 +28,17 @@ re-verified against the live repo, not copied blind from the previous version.
 /GOOGLE_ADS_AGENT_PLAN.md      — full Track 2 (Google Ads) build plan + its own status log
 /META_ADS_AGENT_PLAN.md        — Track 2 Phase 6 (Meta Ads) build plan + its own status log
 /README.md                     — project overview / setup for a human reader
-/LEARNING_GUIDE.md             — teaching-style notes (story-first explanations used so far)
-/MMM_Project_Guide.pdf         — generated study guide (PDF)
-/MMM_Study_Guide.html          — generated study guide (interactive HTML)
+/LICENSE                       — MIT
 /requirements.txt              — pinned deps, see "Environment" below
 /streamlit_app.py              — Track 2 v1 UI (Streamlit)
 /.env.example                  — template for local .env (no real .env exists yet — mock mode only)
 /.gitignore                    — excludes .env, .cache/, __pycache__, audit_log.jsonl, etc.
+
+/docs/                         — supplementary docs, kept out of the root to keep it scannable
+  LEARNING_GUIDE.md            — teaching-style notes (story-first explanations used so far)
+  MMM_Project_Guide.pdf        — generated study guide (PDF)
+  MMM_Study_Guide.html         — generated study guide (interactive HTML)
+  DESIGN_DOCUMENTATION.md      — Google Ads Basic Access application submission doc (kept matched to what's actually built)
 
 /data/
   DATA_DICTIONARY.md           — channel definitions/grouping rationale

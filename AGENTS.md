@@ -47,6 +47,6 @@ placement/portfolio project. He does NOT code. Python is rusty/minimal.
 ## Two tracks in this one repo
 
 1. Bayesian MMM (primary) — `notebooks/01_data_exploration.ipynb` then
-   `notebooks/02_build_mmm.ipynb`. Full detail in README.md and LEARNING_GUIDE.md.
+   `notebooks/02_build_mmm.ipynb`. Full detail in README.md and docs/LEARNING_GUIDE.md.
 2. Google Ads agent (secondary) — plan in `GOOGLE_ADS_AGENT_PLAN.md`. Not started yet
    as of 2026-07-03; check its own status log before assuming any phase is done.
