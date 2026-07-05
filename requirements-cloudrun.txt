@@ -1,0 +1,12 @@
+# Slim dependency set for the deployed Streamlit app (Cloud Run).
+# The full requirements.txt also installs pymc-marketing, pymc, arviz, and
+# jupyterlab for the Track 1 notebooks -- those aren't needed to run
+# streamlit_app.py / ads_agent, and including them would make the container
+# image huge and slow to build. Keep this file in sync with any new imports
+# streamlit_app.py or ads_agent/ actually need.
+streamlit
+openai
+pydantic
+python-dotenv
+google-ads
+Pillow

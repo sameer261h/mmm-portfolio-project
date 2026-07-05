@@ -1,0 +1,10 @@
+.env
+.cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+ads_agent/audit_log.jsonl
+ads_agent/operator_state.json
+.DS_Store
+.ipynb_checkpoints/
+.claude/

@@ -1,0 +1,19 @@
+pymc-marketing==0.15.1
+# pymc pinned to 5.23.0: pip would otherwise install the newest pymc (5.25+), which
+# renamed an internal function that pymc-marketing 0.15.1's budget optimizer relies on
+# (pymc.logprob.utils.rvs_in_graph -> moved). That combo breaks notebook 02's budget
+# optimizer cell with "ImportError: cannot import name 'rvs_in_graph'". Tested working: pymc-marketing 0.15.1 + pymc 5.23.0.
+pymc==5.23.0
+pandas
+numpy
+matplotlib
+seaborn
+arviz
+jupyterlab
+streamlit
+openai
+google-ads
+pydantic
+python-dotenv
+pytest
+Pillow

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMM Study Guide — Interactive</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1a2233; --muted:#5b6575;
+    --accent:#2563eb; --accent-soft:#dbeafe; --green:#059669; --amber:#d97706;
+    --border:#e3e7ee; --code:#f1f3f7;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); line-height:1.6;}
+  header{background:linear-gradient(135deg,#1e3a8a,#2563eb); color:#fff; padding:36px 24px; text-align:center;}
+  header h1{font-size:1.7rem; margin-bottom:6px;}
+  header p{opacity:.85; max-width:640px; margin:0 auto; font-size:.95rem;}
+  nav{position:sticky; top:0; background:var(--card); border-bottom:1px solid var(--border); display:flex; justify-content:center; flex-wrap:wrap; gap:4px; padding:8px; z-index:10;}
+  nav button{border:none; background:transparent; padding:8px 14px; border-radius:8px; font-size:.9rem; cursor:pointer; color:var(--muted); font-weight:600;}
+  nav button.active{background:var(--accent-soft); color:var(--accent);}
+  main{max-width:860px; margin:0 auto; padding:28px 20px 80px;}
+  section.tab{display:none;}
+  section.tab.active{display:block; animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+  h2{font-size:1.35rem; margin:26px 0 12px;}
+  h3{font-size:1.05rem; margin:22px 0 8px;}
+  p{margin:10px 0; color:var(--ink);}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px 22px; margin:14px 0;}
+  .pill{display:inline-block; background:var(--accent-soft); color:var(--accent); font-size:.75rem; font-weight:700; padding:2px 10px; border-radius:999px; letter-spacing:.03em; text-transform:uppercase;}
+  table{width:100%; border-collapse:collapse; margin:12px 0; font-size:.9rem; background:var(--card);}
+  th,td{border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top;}
+  th{background:#eef1f6;}
+  code, pre{font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:.85em; background:var(--code); border-radius:6px;}
+  code{padding:2px 5px;}
+  pre{padding:14px; overflow-x:auto; margin:10px 0; line-height:1.5;}
+  details{border:1px solid var(--border); border-radius:10px; background:var(--card); margin:10px 0; overflow:hidden;}
+  summary{padding:14px 16px; cursor:pointer; font-weight:600; list-style:none; position:relative; padding-right:36px;}
+  summary::after{content:"+"; position:absolute; right:16px; top:12px; font-size:1.2rem; color:var(--accent);}
+  details[open] summary::after{content:"–";}
+  details .body{padding:0 16px 14px; color:var(--muted);}
+  .slider-row{display:flex; align-items:center; gap:12px; margin:10px 0;}
+  .slider-row label{font-weight:600; min-width:170px;}
+  input[type=range]{flex:1; accent-color:var(--accent);}
+  .val{font-family:ui-monospace,monospace; background:var(--code); padding:2px 8px; border-radius:6px; min-width:52px; text-align:center;}
+  canvas{width:100%; height:200px; background:var(--card); border:1px solid var(--border); border-radius:10px; margin-top:8px;}
+  .check{display:flex; gap:10px; align-items:flex-start; padding:9px 4px; border-bottom:1px dashed var(--border);}
+  .check:last-child{border-bottom:none;}
+  .check input{margin-top:5px; width:16px; height:16px; accent-color:var(--green); flex-shrink:0;}
+  .check span{color:var(--ink);}
+  .check input:checked + span{color:var(--muted); text-decoration:line-through;}
+  #progressbar{height:10px; background:var(--border); border-radius:999px; overflow:hidden; margin:8px 0 4px;}
+  #progressfill{height:100%; width:0%; background:var(--green); transition:width .3s;}
+  .note{border-left:4px solid var(--amber); background:#fef7ec; padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:.92rem;}
+  .good{border-left:4px solid var(--green); background:#ecfdf3; padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:.92rem;}
+  .formula{font-family:ui-monospace,monospace; background:var(--code); display:block; padding:10px 14px; border-radius:8px; margin:8px 0; font-size:.9rem;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Marketing Mix Modeling — Study Guide</h1>
+  <p>Interactive companion to your PyMC-Marketing portfolio project. Play with the concepts, track your roadmap, and drill the interview questions.</p>
+</header>
+
+<nav id="nav">
+  <button data-tab="overview" class="active">Overview</button>
+  <button data-tab="concepts">Concepts Lab</button>
+  <button data-tab="data">The Data</button>
+  <button data-tab="roadmap">Roadmap ✓</button>
+  <button data-tab="interview">Interview Drill</button>
+  <button data-tab="setup">Setup</button>
+</nav>
+
+<main>
+
+<!-- ============ OVERVIEW ============ -->
+<section class="tab active" id="overview">
+  <h2>What is MMM?</h2>
+  <div class="card">
+    <p>Marketing Mix Modeling answers the CMO's two questions: <strong>how much of each week's sales did each marketing channel cause</strong>, and <strong>where should the next dollar of budget go?</strong></p>
+    <p>It's a regression on aggregate weekly data — sales explained by channel spend plus controls (price, promos, holidays, macro). No user-level tracking, which is why MMM demand surged after iOS14 and cookie deprecation broke click attribution.</p>
+  </div>
+
+  <h3>The model in one line</h3>
+  <span class="formula">sales<sub>t</sub> = baseline + Σ β<sub>c</sub> · saturation( adstock( spend<sub>c,t</sub> ) ) + Σ γ · controls<sub>t</sub> + error</span>
+  <p>The two transforms — <strong>adstock</strong> (carryover) and <strong>saturation</strong> (diminishing returns) — are what make it MMM rather than plain regression. Try them in the <em>Concepts Lab</em> tab.</p>
+
+  <h3>The pipeline</h3>
+  <table>
+    <tr><th>Step</th><th>What happens</th><th>Where</th></tr>
+    <tr><td>1. Data prep</td><td>One row per week: sales, spend per channel, controls</td><td>Notebook 01</td></tr>
+    <tr><td>2. Specify</td><td>Choose adstock + saturation forms, priors, seasonality</td><td>Notebook 02</td></tr>
+    <tr><td>3. Fit</td><td>MCMC sampling (10–40 min on laptop)</td><td>Notebook 02</td></tr>
+    <tr><td>4. Validate</td><td>r_hat &lt; 1.01, no divergences, posterior predictive check</td><td>Notebook 02</td></tr>
+    <tr><td>5. Decompose</td><td>Split sales into baseline + per-channel contributions</td><td>Notebook 02</td></tr>
+    <tr><td>6. ROI</td><td>Contribution ÷ spend, with credible intervals</td><td>Notebook 02</td></tr>
+    <tr><td>7. Optimize</td><td>Reallocate budget along saturation curves</td><td>Notebook 02</td></tr>
+  </table>
+
+  <h3>Why PyMC-Marketing (know this cold)</h3>
+  <table>
+    <tr><th></th><th>Robyn (Meta)</th><th>Meridian (Google)</th><th>PyMC-Marketing ✓</th></tr>
+    <tr><td>Method</td><td>Ridge regression + evolutionary search</td><td>Bayesian, hierarchical geo-level</td><td>Fully Bayesian (NUTS)</td></tr>
+    <tr><td>Language</td><td>R</td><td>Python</td><td>Python</td></tr>
+    <tr><td>Best when</td><td>Speed &amp; iteration matter most</td><td>You have geo-split data</td><td>Learning deeply, custom models, uncertainty</td></tr>
+    <tr><td>Watch out</td><td>Hard to defend statistically</td><td>Heavy; slow on CPU</td><td>Must understand priors; MCMC is slow</td></tr>
+  </table>
+  <div class="good"><strong>Your one-liner:</strong> "I chose Bayesian MMM because budget decisions need uncertainty — 'Search ROI is 2.1× with a 94% interval of 1.6–2.7' is decision-grade; a point estimate isn't."</div>
+</section>
+
+<!-- ============ CONCEPTS LAB ============ -->
+<section class="tab" id="concepts">
+  <h2>Concepts Lab</h2>
+
+  <div class="card">
+    <span class="pill">Transform 1</span>
+    <h3>Adstock — ads have an afterglow</h3>
+    <p><strong>Story:</strong> you run a pizza shop and spend ₹10,000 on a TV ad on Monday. Some people order that evening. Ramesh sees it Monday but orders on Friday. Priya orders two weeks later when friends visit. The ad sits in people's heads and keeps nudging them — <em>that</em> is "carryover": the effect carries over into future weeks. "Adstock" = the leftover stock of influence the ad still has.</p>
+    <p><strong>Why the model cares:</strong> if it only compared this week's spend to this week's sales, Ramesh's and Priya's orders would look like they came from nowhere, and TV would get too little credit. So we replace "spend this week" with "advertising pressure in the air this week" = fresh spend + fading leftovers from past weeks.</p>
+    <table>
+      <tr><th>Week</th><th>You spend</th><th>Pressure in the air (α = 0.5, memory halves weekly)</th></tr>
+      <tr><td>1</td><td>₹10,000</td><td>10,000</td></tr>
+      <tr><td>2</td><td>0</td><td>5,000</td></tr>
+      <tr><td>3</td><td>0</td><td>2,500</td></tr>
+      <tr><td>4</td><td>0</td><td>1,250</td></tr>
+    </table>
+    <p>The formula says only that — <em>this week's pressure = fresh spend + α share of last week's pressure:</em></p>
+    <span class="formula">adstock<sub>t</sub> = spend<sub>t</sub> + α · adstock<sub>t−1</sub></span>
+    <p><strong>α is a memory dial (0 to 1).</strong> Search ads: α ≈ 0 — someone searching "pizza near me" buys <em>now</em>. TV brand ads: α ≈ 0.6–0.8 — an afterglow lasting weeks. The model learns each channel's dial from the data. Drag the slider and watch the afterglow of one week's spend:</p>
+    <div class="slider-row">
+      <label>Decay rate α</label>
+      <input type="range" id="alpha" min="0" max="0.9" step="0.05" value="0.5">
+      <span class="val" id="alphaVal">0.50</span>
+    </div>
+    <canvas id="adstockChart" width="800" height="200"></canvas>
+    <p id="adstockMsg" style="margin-top:8px; color:var(--muted); font-size:.92rem;"></p>
+  </div>
+
+  <div class="card">
+    <span class="pill">Transform 2</span>
+    <h3>Saturation — the millionth rupee works less hard</h3>
+    <p><strong>Story:</strong> your town has 50,000 people. The first ₹1 lakh of ads reaches people who've never heard of you — lots of new customers. The next ₹1 lakh mostly reaches people who already saw the ad or already order from you — fewer new customers. By the fifth lakh, nearly everyone reachable has been reached: extra money buys almost nothing. Same rupee, weaker effect. That's saturation.</p>
+    <p>So the model doesn't assume "double the spend → double the sales." It fits a curve that rises steeply at first and flattens out. Where a channel currently sits on its curve — <em>steep part</em> (more budget still pays off) or <em>flat part</em> (saturated, money wasted) — is exactly the "where should the next rupee go" answer:</p>
+    <span class="formula">effect = 1 − e<sup>−λ·spend</sup></span>
+    <div class="slider-row">
+      <label>Saturation speed λ</label>
+      <input type="range" id="lam" min="0.5" max="6" step="0.25" value="2">
+      <span class="val" id="lamVal">2.00</span>
+    </div>
+    <canvas id="satChart" width="800" height="200"></canvas>
+    <p style="margin-top:8px; color:var(--muted); font-size:.92rem;">The dashed line marks where marginal return has dropped to 25% of the first dollar's return — past it, budget is better spent elsewhere. <strong>This chart IS the "where should the next dollar go" answer.</strong></p>
+  </div>
+
+  <div class="card">
+    <span class="pill">Why Bayesian</span>
+    <h3>Small data + correlated channels = you need priors</h3>
+    <p>With ~200 weekly rows and channels that move together, point estimates are unstable. Priors encode marketing knowledge ("TV decay is probably 0.5–0.8"), and the posterior gives honest uncertainty on every ROI.</p>
+  </div>
+
+  <h3>Vocabulary you must own</h3>
+  <table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td>KPI / target</td><td>The thing you model (weekly revenue here)</td></tr>
+    <tr><td>Adstock / carryover</td><td>Lagged, decaying effect of past spend</td></tr>
+    <tr><td>Saturation / Hill curve</td><td>Diminishing returns to spend</td></tr>
+    <tr><td>Baseline</td><td>Sales not attributable to media</td></tr>
+    <tr><td>Contribution</td><td>Sales attributed to a channel in the decomposition</td></tr>
+    <tr><td>ROI / ROAS</td><td>Attributed revenue ÷ spend</td></tr>
+    <tr><td>mROI (marginal ROI)</td><td>Return on the <em>next</em> dollar — what optimization uses</td></tr>
+    <tr><td>Prior / posterior</td><td>Belief before / after seeing data</td></tr>
+    <tr><td>r_hat, divergences</td><td>MCMC convergence diagnostics</td></tr>
+    <tr><td>Calibration</td><td>Anchoring MMM with lift-test experiments</td></tr>
+  </table>
+</section>
+
+<!-- ============ DATA ============ -->
+<section class="tab" id="data">
+  <h2>The Dataset</h2>
+  <div class="card">
+    <p>Real (anonymized) US retailer — <strong>200+ weeks (2014–2018)</strong>, from the well-known <a href="https://github.com/sibylhe/mmm_stan">sibylhe/mmm_stan</a> repo (originally Kaggle). Notebook 01 downloads it automatically.</p>
+  </div>
+
+  <h3>Column groups</h3>
+  <table>
+    <tr><th>Prefix / column</th><th>Meaning</th></tr>
+    <tr><td><code>wk_strt_dt</code></td><td>Week start date (time index)</td></tr>
+    <tr><td><code>sales</code></td><td>Weekly sales revenue ($) — the KPI</td></tr>
+    <tr><td><code>mdsp_*</code></td><td><strong>Media spend</strong> ($) per channel — main predictors</td></tr>
+    <tr><td><code>mdip_*</code></td><td>Media impressions (alternative to spend)</td></tr>
+    <tr><td><code>me_*</code></td><td>Macro controls (consumer sentiment, gas price)</td></tr>
+    <tr><td><code>st_ct</code></td><td>Store count (distribution)</td></tr>
+    <tr><td><code>mrkdn_*</code></td><td>Markdown / promo intensity</td></tr>
+    <tr><td><code>hldy_*</code></td><td>Holiday dummy flags</td></tr>
+    <tr><td><code>seas_*</code></td><td>Seasonality dummies (we drop these — the model fits Fourier terms instead)</td></tr>
+  </table>
+
+  <h3>Channel grouping (10 → 7)</h3>
+  <table>
+    <tr><th>Raw suffix</th><th>Channel</th><th>Our group</th></tr>
+    <tr><td><code>vidtr</code></td><td>Traditional video (TV)</td><td>tv</td></tr>
+    <tr><td><code>viddig</code></td><td>Digital video</td><td>digital_video</td></tr>
+    <tr><td><code>sem</code></td><td>Search engine marketing</td><td>search</td></tr>
+    <tr><td><code>so</code></td><td>Social media</td><td>social</td></tr>
+    <tr><td><code>on</code></td><td>Online display</td><td>display</td></tr>
+    <tr><td><code>audtr</code>, <code>auddig</code></td><td>Radio + digital audio</td><td>audio</td></tr>
+    <tr><td><code>dm</code>, <code>inst</code>, <code>nsp</code></td><td>Direct mail, inserts, newspaper</td><td>print_mail</td></tr>
+  </table>
+  <div class="note"><strong>Why group?</strong> ~200 observations ÷ fewer channels = more data per parameter and less collinearity. A modeling choice you should defend, not hide.</div>
+
+  <h3>Data requirements for any MMM (general rule)</h3>
+  <table>
+    <tr><th>Group</th><th>Examples</th><th>Notes</th></tr>
+    <tr><td>KPI</td><td>Revenue or units</td><td>Weekly, 2–3 yrs (min ~104 rows)</td></tr>
+    <tr><td>Media spend</td><td>One column per channel</td><td>Impressions/GRPs even better</td></tr>
+    <tr><td>Controls</td><td>Price, promos, distribution</td><td>Anything else that moves sales</td></tr>
+    <tr><td>Seasonality</td><td>Holiday flags, Fourier terms</td><td>Diwali/Christmas spikes</td></tr>
+    <tr><td>Optional</td><td>Competitor spend, macro index</td><td>Improves realism</td></tr>
+  </table>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section class="tab" id="roadmap">
+  <h2>4-Week Roadmap</h2>
+  <div class="card">
+    <div id="progressbar"><div id="progressfill"></div></div>
+    <p style="font-size:.85rem; color:var(--muted);" id="progressText">0% complete — progress saves automatically in this browser.</p>
+  </div>
+
+  <h3>Week 1 — Foundations</h3>
+  <div class="card" id="checks">
+    <div class="check"><input type="checkbox" data-k="c1"><span>Read the Overview + Concepts Lab tabs; play with both sliders until adstock &amp; saturation feel obvious</span></div>
+    <div class="check"><input type="checkbox" data-k="c2"><span>Complete environment setup (Setup tab) and open Jupyter</span></div>
+    <div class="check"><input type="checkbox" data-k="c3"><span>Run notebook 01 top-to-bottom; fill in the "My observations" cell</span></div>
+    <div class="check"><input type="checkbox" data-k="c4"><span>Explain to yourself (out loud!) why we grouped 10 channels into 7</span></div>
+    <h3 style="margin-top:18px;">Week 2 — Model</h3>
+    <div class="check"><input type="checkbox" data-k="c5"><span>Run notebook 02 through the fit cell; while it samples, re-read "Why Bayesian"</span></div>
+    <div class="check"><input type="checkbox" data-k="c6"><span>Check diagnostics: max r_hat &lt; 1.01, divergences ≈ 0</span></div>
+    <div class="check"><input type="checkbox" data-k="c7"><span>Posterior predictive plot: does the model track actual sales, including holiday spikes?</span></div>
+    <h3 style="margin-top:18px;">Week 3 — Insight</h3>
+    <div class="check"><input type="checkbox" data-k="c8"><span>Build the ROI table; identify over- and under-performing channels vs their spend share</span></div>
+    <div class="check"><input type="checkbox" data-k="c9"><span>Read the saturation curves: which channels are flat (saturated)?</span></div>
+    <div class="check"><input type="checkbox" data-k="c10"><span>Run the budget optimizer; write your reallocation recommendation with the credible interval</span></div>
+    <h3 style="margin-top:18px;">Week 4 — Portfolio</h3>
+    <div class="check"><input type="checkbox" data-k="c11"><span>Holdout validation: refit on first 80% of weeks, test on last 20%</span></div>
+    <div class="check"><input type="checkbox" data-k="c12"><span>Write the 1-page case study: problem → method → validation → recommendation</span></div>
+    <div class="check"><input type="checkbox" data-k="c13"><span>Push to GitHub with clean README; ROI chart as banner</span></div>
+    <div class="check"><input type="checkbox" data-k="c14"><span>Drill all 6 interview questions until you can answer without notes</span></div>
+  </div>
+
+  <div class="good"><strong>Target resume bullet:</strong> "Built a Bayesian Marketing Mix Model (PyMC-Marketing) on 4 years of weekly retail data across 10 media channels; quantified channel ROI with uncertainty intervals and recommended a budget reallocation projected to lift revenue by X% at constant spend."</div>
+</section>
+
+<!-- ============ INTERVIEW ============ -->
+<section class="tab" id="interview">
+  <h2>Interview Drill</h2>
+  <p>Try answering out loud <em>before</em> expanding. If you can't, that's your study list.</p>
+
+  <details><summary>1. Why MMM over last-click attribution?</summary><div class="body">
+    Attribution only sees digital touchpoints, breaks under privacy changes (iOS14, cookie deprecation), and measures correlation of clicks, not incremental sales. MMM uses aggregate data — privacy-proof, covers offline channels (TV, radio, print), and estimates incrementality. Best practice is both: MMM for budget allocation, attribution for in-channel tactics.
+  </div></details>
+
+  <details><summary>2. Why PyMC-Marketing over Robyn or Meridian?</summary><div class="body">
+    Robyn = ridge regression with evolutionary hyperparameter search — fast, but the search is hard to defend statistically. Meridian = Bayesian and excellent, but its edge is hierarchical geo-level modeling, and my dataset was national-level. PyMC-Marketing gave me a fully transparent Bayesian model: every prior visible, ROI with credible intervals, Python end-to-end.
+  </div></details>
+
+  <details><summary>3. How do you know your model isn't garbage?</summary><div class="body">
+    Four checks: (1) MCMC convergence — r_hat &lt; 1.01, zero/near-zero divergences; (2) posterior predictive check — simulated sales tracks actual, including holiday spikes; (3) out-of-sample validation on held-out weeks; (4) sanity — ROIs within plausible industry ranges, contributions decompose sensibly (baseline isn't 5% or 95%).
+  </div></details>
+
+  <details><summary>4. ROI vs marginal ROI — what's the difference and which matters?</summary><div class="body">
+    ROI = average return (total attributed sales ÷ total spend). Marginal ROI = the derivative of the saturation curve at current spend — the return on the <em>next</em> dollar. Budget decisions use marginal: a channel can have great average ROI but be saturated, so its next dollar returns little.
+  </div></details>
+
+  <details><summary>5. What are MMM's limitations?</summary><div class="body">
+    It's observational, not experimental — correlated spend patterns can bias estimates. Needs 2+ years of weekly data. Struggles with channel collinearity and can't guide fine-grained targeting (audiences, creatives). Gold standard: calibrate MMM with randomized lift tests, then use it for allocation.
+  </div></details>
+
+  <details><summary>6. Two channels always move together — what happens and what do you do?</summary><div class="body">
+    Multicollinearity: the model can't separate their effects, so posteriors go wide. Fixes: informative priors, combining the channels into one (as I did with print+mail), staggering spend in future planning, or running a lift test on one channel to pin down its effect (calibration).
+  </div></details>
+
+  <details><summary>Bonus: Walk me through your project in 60 seconds.</summary><div class="body">
+    Problem → a retailer spends across 10 channels with no incrementality measure. Method → Bayesian MMM in PyMC-Marketing: geometric adstock, logistic saturation, macro/promo/holiday controls, Fourier seasonality, fit with NUTS on 4 years of weekly data. Validation → convergence diagnostics, posterior predictive, holdout weeks. Result → ROI per channel with credible intervals; saturation analysis showed channel X saturated and Y under-invested; reallocation projected +Z% revenue at flat spend.
+  </div></details>
+</section>
+
+<!-- ============ SETUP ============ -->
+<section class="tab" id="setup">
+  <h2>Setup (one time, ~15 min)</h2>
+  <div class="card">
+    <p><strong>1.</strong> Install Python via <a href="https://docs.anaconda.com/miniconda/">Miniconda</a> — it handles PyMC's dependencies cleanly.</p>
+    <p><strong>2.</strong> Open Terminal and run:</p>
+<pre>cd ~/Downloads/mmm-portfolio-project
+conda create -n mmm python=3.11 -y
+conda activate mmm
+pip install -r requirements.txt
+jupyter lab</pre>
+    <p><strong>3.</strong> Jupyter opens in your browser → open <code>notebooks/01_data_exploration.ipynb</code> → run cells with <strong>Shift+Enter</strong>.</p>
+  </div>
+  <div class="note">The model-fitting cell in notebook 02 takes 10–40 minutes. That's normal MCMC behaviour, not a hang — the progress bar will crawl.</div>
+  <h3>Project files</h3>
+  <table>
+    <tr><th>File</th><th>Purpose</th></tr>
+    <tr><td><code>README.md</code></td><td>Roadmap + setup (text version)</td></tr>
+    <tr><td><code>LEARNING_GUIDE.md</code></td><td>Concepts + interview prep (text version)</td></tr>
+    <tr><td><code>data/DATA_DICTIONARY.md</code></td><td>Every column explained</td></tr>
+    <tr><td><code>notebooks/01_data_exploration.ipynb</code></td><td>Load, clean, explore → model_data.csv</td></tr>
+    <tr><td><code>notebooks/02_build_mmm.ipynb</code></td><td>Fit, validate, ROI, optimize budget</td></tr>
+    <tr><td><code>MMM_Project_Guide.pdf</code></td><td>Printable version of this guide</td></tr>
+  </table>
+</section>
+
+</main>
+
+<script>
+// ---- Tabs ----
+const nav = document.getElementById('nav');
+nav.addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(e.target.dataset.tab).classList.add('active');
+  window.scrollTo({top:0});
+});
+
+// ---- Adstock chart ----
+const aCanvas = document.getElementById('adstockChart');
+const alphaIn = document.getElementById('alpha');
+function drawAdstock(){
+  const a = parseFloat(alphaIn.value);
+  document.getElementById('alphaVal').textContent = a.toFixed(2);
+  const ctx = aCanvas.getContext('2d');
+  const W = aCanvas.width, H = aCanvas.height;
+  ctx.clearRect(0,0,W,H);
+  const n = 10, pad = 40, bw = (W - 2*pad) / n * 0.6;
+  let total = 0;
+  for (let k=0; k<n; k++) total += Math.pow(a,k);
+  for (let k=0; k<n; k++){
+    const w = Math.pow(a,k);
+    const h = w * (H - 60);
+    const x = pad + k * (W - 2*pad)/n;
+    ctx.fillStyle = k===0 ? '#2563eb' : '#93c5fd';
+    ctx.fillRect(x, H-30-h, bw, h);
+    ctx.fillStyle = '#5b6575';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('wk+'+k, x, H-12);
+    if (w > 0.02) ctx.fillText(Math.round(w*100)+'%', x, H-36-h);
+  }
+  const half = a>0 ? Math.log(0.5)/Math.log(a) : 0;
+  document.getElementById('adstockMsg').textContent =
+    a === 0 ? 'α = 0: all effect lands in the same week (typical of search — people who search, buy now).'
+    : `One dollar of spend this week keeps ${Math.round(a*100)}% of its power next week. Half of the effect is gone after ~${half.toFixed(1)} weeks. ` +
+      (a >= 0.5 ? 'Long memory — typical of TV / brand media.' : 'Short memory — typical of performance channels.');
+}
+alphaIn.addEventListener('input', drawAdstock);
+
+// ---- Saturation chart ----
+const sCanvas = document.getElementById('satChart');
+const lamIn = document.getElementById('lam');
+function drawSat(){
+  const lam = parseFloat(lamIn.value);
+  document.getElementById('lamVal').textContent = lam.toFixed(2);
+  const ctx = sCanvas.getContext('2d');
+  const W = sCanvas.width, H = sCanvas.height, pad = 40;
+  ctx.clearRect(0,0,W,H);
+  // axes
+  ctx.strokeStyle = '#e3e7ee'; ctx.beginPath();
+  ctx.moveTo(pad, 10); ctx.lineTo(pad, H-25); ctx.lineTo(W-10, H-25); ctx.stroke();
+  ctx.fillStyle = '#5b6575'; ctx.font = '12px sans-serif';
+  ctx.fillText('spend →', W-70, H-8);
+  ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('effect →', 0, 0); ctx.restore();
+  // curve
+  ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2.5; ctx.beginPath();
+  for (let i=0; i<=200; i++){
+    const x = i/200;
+    const y = 1 - Math.exp(-lam*x);
+    const px = pad + x*(W-pad-15), py = (H-25) - y*(H-45);
+    i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+  }
+  ctx.stroke(); ctx.lineWidth = 1;
+  // marginal-return-25% marker: derivative lam*e^(-lam x) = 0.25*lam  =>  x = ln(4)/lam
+  const xm = Math.log(4)/lam;
+  if (xm <= 1){
+    const px = pad + xm*(W-pad-15);
+    ctx.strokeStyle = '#d97706'; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(px, 10); ctx.lineTo(px, H-25); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#d97706';
+    ctx.fillText('saturating →', px+6, 24);
+  }
+}
+lamIn.addEventListener('input', drawSat);
+
+// ---- Checklist with localStorage ----
+const boxes = document.querySelectorAll('.check input');
+function refreshProgress(){
+  const done = [...boxes].filter(b => b.checked).length;
+  const pct = Math.round(done / boxes.length * 100);
+  document.getElementById('progressfill').style.width = pct + '%';
+  document.getElementById('progressText').textContent =
+    pct + '% complete (' + done + '/' + boxes.length + ') — progress saves automatically in this browser.';
+}
+boxes.forEach(b => {
+  try { b.checked = localStorage.getItem('mmm_' + b.dataset.k) === '1'; } catch(e){}
+  b.addEventListener('change', () => {
+    try { localStorage.setItem('mmm_' + b.dataset.k, b.checked ? '1' : '0'); } catch(e){}
+    refreshProgress();
+  });
+});
+
+drawAdstock(); drawSat(); refreshProgress();
+</script>
+</body>
+</html>

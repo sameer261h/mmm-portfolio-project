@@ -1,0 +1,17 @@
+.env
+.env.example
+.git
+.cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+ads_agent/audit_log.jsonl
+ads_agent/operator_state.json
+data/
+notebooks/
+tests/
+*.pdf
+*.html
+*.md
+requirements.txt
+google-cloud-sdk/
