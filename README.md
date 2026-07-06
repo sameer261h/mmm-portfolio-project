@@ -61,6 +61,17 @@ Honest breakdown, not marketing — what each agent can actually do, named per [
 
 **What it already found, honestly reported:** the deterministic fallback scores **14/14 on every run** — it's the reference implementation the LLM path is judged against. The OpenAI path (gpt-4.1-mini), on a representative run, scored 19/28 rows overall, with a **restraint score of 33%** (how often it correctly did nothing across the 9 no-action scenarios) and only 5 of 14 scenarios fully consistent across 5 repeated runs. Failures cluster exactly where the design docs predicted: the model repeatedly flagged a $88.75 zero-conversion search term as wasteful despite an explicit "$300 minimum" rule stated in its instructions, and on one run failed to detect an unambiguous 6.8x CPA spike at all. This is a genuine, reproducible reliability gap — not a single fixable prompt bug — and it's exactly the kind of decision-quality problem code-correctness tests structurally cannot catch. It's also exactly why an eval harness like this exists rather than staying a flagged gap: it turns "the LLM might be unreliable" from a hunch into a measured, re-runnable number.
 
+**Eval coverage maturity — Level 1 of 4, deliberately incremental:** 14 of a cataloged 60 scenarios are built (`docs/EVAL_SCENARIOS.md` has the full catalog; `docs/EVAL_SCOPE_DECISIONS.md` explains exactly which 14 and why, and exactly what unlocks each of the other 46). Not built all at once on purpose — coverage of *decision categories* matters more than raw scenario count, and each later level needs real prerequisite work, not just more data authoring:
+
+| Level | Scope | Status |
+|---|---|---|
+| **1 — built** | Core detections (pause/cut-budget/exclude-keyword), restraint under 4 kinds of temptation, root-cause-vs-symptom discrimination, 3 data-integrity edge cases | ✅ 14/60 scenarios, deterministic reference 14/14 |
+| **2 — next up** | Remaining restraint traps (attribution lag, learning-period immunity, seasonality, brand context), keyword/cannibalization variants, remaining multi-signal conflicts | 🔜 Cataloged, no new modeling needed — mostly data authoring against fields that already exist |
+| **3 — needs new modeling** | Ad Rank / Quality Score scenarios (QS drops, impression-share-lost-to-rank vs. lost-to-budget, ad disapprovals) | 🔜 Blocked on adding QS/impression-share fields to the simulator and new agent actions (ad copy recommendations) it doesn't have yet |
+| **4 — needs a schema refactor** | All 18 Meta scenarios (ad set/ad-level entity hierarchy, learning phase, CBO awareness) | 🔜 Blocked on a `ChangeTicket` entity-hierarchy refactor Meta needs anyway, and lower priority while Meta Ads' real-write path is separately blocked on the payment-method/region issue above |
+
+Levels 2–4 are a documented backlog, not a promise of what gets built next — each row in `docs/EVAL_SCOPE_DECISIONS.md`'s "dropped" table names the specific prerequisite.
+
 **Safety design:**
 - Every write path enforces hard guardrails in code (budget caps, daily rate limit, action allowlist) — not just prompt instructions
 - Nothing is ever auto-enabled; campaigns are always created `PAUSED`

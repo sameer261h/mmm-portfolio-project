@@ -739,6 +739,17 @@ approval, deployed on Cloud Run."
   copies only, matching this repo's existing convention of keeping
   supplementary docs out of the root.
 
+  Also added an explicit "eval coverage maturity" framing (Level 1-4, a
+  scale for eval rollout specifically -- not to be confused with this
+  project's L0-L6 *agent autonomy* levels elsewhere) to README's Evals
+  section and `GOOGLE_ADS_AGENT_PLAN.md`'s Phase 5 section: Level 1 = the
+  14 scenarios built now; Level 2 = remaining restraint/keyword/multi-signal
+  scenarios, no new modeling needed; Level 3 = Ad Rank/Quality Score
+  scenarios, blocked on new simulator fields; Level 4 = all 18 Meta
+  scenarios, blocked on the ad-set/ad entity-hierarchy refactor. Sameer
+  asked for this explicitly so the README reads as "here's the roadmap,"
+  not "here's a finished list."
+
 ---
 
 ## Paste-ready custom instructions (for a claude.ai Project)

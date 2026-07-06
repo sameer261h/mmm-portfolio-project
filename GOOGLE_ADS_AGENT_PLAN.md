@@ -338,6 +338,18 @@ inputs, and a prompt-injection attempt embedded directly in a search term's text
 Deterministic reference implementation: **14/14**, every run. See HANDOFF.md for
 the real LLM-path result this run produced.
 
+**This is Level 1 of a 4-level eval-coverage roadmap, deliberately** — 14 of the
+60 cataloged scenarios, chosen for decision-category coverage over raw count (see
+README's "Eval coverage maturity" table and `docs/EVAL_SCOPE_DECISIONS.md` for the
+full backlog). Level 2 (remaining restraint traps, keyword/cannibalization variants,
+multi-signal conflicts) needs no new simulation modeling, just more data authoring.
+Level 3 (Ad Rank / Quality Score scenarios) needs new simulator fields (QS,
+impression-share-lost-to-rank) and agent actions that don't exist yet. Level 4 (all
+18 Meta scenarios) needs the ad-set/ad entity-hierarchy refactor Meta's real-write
+path will need anyway — not started, and lower priority while Meta Ads' real-API
+path is separately blocked on the payment-method/region issue in
+`META_ADS_AGENT_PLAN.md`.
+
 ## Stretch goal — Shopping campaigns
 Not scoped into any phase above yet. v1 only supports Search + Performance Max
 (PMax already covers Display/YouTube/Discover/Gmail inventory, so a standalone
