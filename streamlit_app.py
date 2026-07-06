@@ -30,6 +30,17 @@ def _max_daily_budget() -> float:
     return float(os.getenv("MAX_DAILY_BUDGET_USD", "1000"))
 
 
+def _display_text(text: str) -> None:
+    """st.write() renders markdown, and markdown treats a pair of "$" as
+    inline LaTeX -- LLM-generated summaries routinely contain two dollar
+    amounts (e.g. "$50.00/day... $307,995/week"), which get silently parsed
+    as a math expression instead of displayed as text. Escaping "$" avoids
+    that without giving up markdown for any other formatting the text uses.
+    """
+
+    st.write(text.replace("$", "\\$"))
+
+
 def _plan_to_json(plan: CampaignPlan) -> str:
     return plan.model_dump_json(indent=2)
 
@@ -111,9 +122,9 @@ if st.session_state.plan_json:
         st.session_state.plan_json = edited_json
 
         st.markdown("**Executive summary**")
-        st.write(edited_plan.executive_summary)
+        _display_text(edited_plan.executive_summary)
         st.markdown("**MMM budget logic**")
-        st.write(edited_plan.mmm_summary)
+        _display_text(edited_plan.mmm_summary)
 
         rows = [
             {
@@ -240,12 +251,15 @@ st.divider()
 st.subheader("Simulated optimizer loop (Phase 5, synthetic data only)")
 st.caption(
     "No real ad spend involved -- this advances an independent simulated-day "
-    "clock (ads_agent/simulation_state.py) through a scripted 4-scenario "
-    "ladder (healthy baseline -> CPA spike -> a wasteful search term -> "
-    "budget pacing overrun), calling the operator agent proactively each day "
-    "the same way a scheduled Cloud Scheduler run eventually would against a "
-    "real account. It still only *proposes* -- the same Approve/Reject gate "
-    "as Phase 3 above, nothing auto-applies."
+    "clock (ads_agent/simulation_state.py) through a scripted 14-scenario "
+    "ladder (a healthy baseline, real problems like a CPA spike or a wasteful "
+    "keyword, restraint traps like a near-miss ratio or normal Google Ads "
+    "overdelivery, and data-integrity edge cases like missing data or a "
+    "prompt-injection attempt), calling the operator agent proactively each "
+    "day the same way a scheduled Cloud Scheduler run eventually would "
+    "against a real account. It still only *proposes* -- the same "
+    "Approve/Reject gate as Phase 3 above, nothing auto-applies. See "
+    "`ads_agent/evals.py` for the eval harness that scores these decisions."
 )
 
 st.write(f"Simulated day: **{get_simulated_day()}**")
@@ -277,7 +291,8 @@ if st.button("Check account (run monitor_and_propose)", type="primary"):
     st.session_state.sim_change_ticket = monitoring_result.ticket
 
 if st.session_state.sim_summary:
-    st.markdown(f"**Monitoring summary:** {st.session_state.sim_summary}")
+    escaped_sim_summary = st.session_state.sim_summary.replace("$", "\\$")
+    st.markdown(f"**Monitoring summary:** {escaped_sim_summary}")
 
 if st.session_state.sim_change_ticket:
     sim_ticket = st.session_state.sim_change_ticket
@@ -367,9 +382,9 @@ if st.session_state.meta_plan_json:
         st.session_state.meta_plan_json = edited_meta_json
 
         st.markdown("**Executive summary**")
-        st.write(edited_meta_plan.executive_summary)
+        _display_text(edited_meta_plan.executive_summary)
         st.markdown("**MMM budget logic**")
-        st.write(edited_meta_plan.mmm_summary)
+        _display_text(edited_meta_plan.mmm_summary)
 
         meta_rows = [
             {
