@@ -582,6 +582,163 @@ approval, deployed on Cloud Run."
   object types verified live**, same honesty standard as everywhere else in this repo.
   Full test suite: 37/37 passing.
 
+- 2026-07-06 (same day): **Built a synthetic-data Phase 5 loop + this repo's first
+  real eval harness -- no real ad spend anywhere in this.** Sameer asked whether the
+  agentic loop could be exercised without waiting on real spend; answer was yes, and
+  it's the same technique evals use generally (scripted synthetic scenarios with a
+  known-correct answer), not a workaround.
+
+  New: `ads_agent/simulation_state.py` (a JSON-persisted simulated-day counter,
+  same pattern as `operator_state.py`), a 4-window scenario script added to
+  `analyst_data.py` (`scenario_for_day()`: sim_day 0-3 healthy baseline, 4-6 a
+  Search CPA spike, 7-9 one search term blowing out with zero conversions, 10+
+  PMax pacing hot) that only ever touches the single most-recent synthetic day's
+  numbers -- older days keep their original seeded values. `operator_agent.py`
+  gained `monitor_and_propose()`: unlike `propose_change(request)`, nothing prompts
+  it except "look at current account state" -- it either says no action is needed
+  or returns exactly one `ChangeTicket`, via a new `MonitoringResult` schema
+  (`action_needed: bool`, `ticket: ChangeTicket | None`, validated to agree). Has
+  both an OpenAI structured-output path and a deterministic rule-based fallback
+  (CPA > 3x recent baseline -> pause; a term with >=$300 cost and 0 conversions ->
+  negative keyword; a campaign's latest-day cost > 1.25x its budget -> budget cut).
+
+  Refactored the ticket-apply logic that used to live inline in `streamlit_app.py`
+  into `ads_agent/apply_change.py`, so the existing Phase 3 UI, the new Phase 5 UI
+  section, and the eval harness all approve through the exact same code path
+  instead of three copies of the same ~15 lines.
+
+  Streamlit gained a "Simulated optimizer loop (Phase 5)" section: Advance
+  1 day / Reset buttons, a "Check account" button that calls
+  `monitor_and_propose()`, and the *same* Approve/Reject gate as Phase 3 --
+  nothing auto-applies, matching the L3 (not L4) framing already used
+  everywhere else in this repo. Hit one real Streamlit bug while testing this
+  live in the browser: the simulated-day counter is displayed *above* the
+  Advance-day button in the script, so on the same rerun that increments it,
+  the display had already rendered the pre-increment value -- looked like the
+  button was silently failing (it wasn't; the JSON file was updating correctly,
+  the display was just one click behind). Fixed by calling `st.rerun()`
+  immediately after mutating the simulated day, confirmed live in the browser
+  afterward (day counter now updates on the same click).
+
+  **The eval harness itself: `ads_agent/evals.py`, run via `python -m
+  ads_agent.evals`.** This repo's first actual eval, not just another pytest file
+  -- runs the 4-scenario ladder through `monitor_and_propose()`, against the
+  deterministic fallback and (if `OPENAI_API_KEY` is set) the OpenAI path too,
+  scoring action_needed/action-type/campaign correctness plus a guardrail-safety
+  check (does applying the proposed ticket via `MockGoogleAdsClient` actually
+  clear guardrails), and saves a full JSON trace per run to
+  `ads_agent/eval_runs/` (gitignored).
+
+  **What it found, live, across several real runs -- not a hypothetical:** the
+  deterministic fallback scored 4/4 every time. The OpenAI path (`gpt-4.1-mini`)
+  scored 3/4 on every run so far, but *which* scenario it got wrong varied
+  between runs -- one run it misfired at the healthy baseline (proposing
+  `ADD_NEGATIVE_KEYWORD` for a search term costing $88.75 with zero
+  conversions, below the explicit $300 rule), another run it misfired at the
+  budget-overrun scenario instead (proposing the same negative-keyword action
+  where a budget cut was correct), even after the system prompt was tightened
+  twice with an explicit "$300 threshold" rule and then an explicit "don't
+  propose a ticket for a candidate you just said fails the bar" rule -- its
+  own returned `summary` text sometimes literally stated the term was "below
+  the $300 threshold" in the same response that still shipped a ticket for
+  that exact term. This is a genuine run-to-run reliability gap, not a single
+  fixable prompt bug, and is exactly the class of decision-quality problem
+  code-correctness tests structurally cannot catch -- now a documented,
+  reproducible eval result rather than something papered over. See README's
+  Evals section and `GOOGLE_ADS_AGENT_PLAN.md`'s Phase 5 entry for the shorter
+  version. New tests in `tests/test_simulation.py` (8 tests, all against the
+  deterministic path for reproducibility); `tests/conftest.py`'s cleanup fixture
+  extended to also reset the new simulated-day state file. Full suite: **45/45
+  passing.** Verified live in the browser end-to-end: advanced to day 4, clicked
+  Check account, got the PAUSE_CAMPAIGN ticket, clicked Approve, confirmed the
+  mock write landed in both `operator_state.json` (Search campaign now shows
+  `PAUSED`) and `audit_log.jsonl`.
+
+  README's Evals section, the Phase 5 row in its phase table, and both pitch
+  decks (`pitch/*.html`) updated to stop describing this as a future "honest
+  gap" and instead report what was actually built and actually found.
+
+- 2026-07-06 (same day): **Expanded the eval ladder from 4 to 14 scenarios,
+  implemented exactly from a spec Sameer had drafted with another model
+  (Fable) against this repo's actual code** -- `docs/EVAL_SCENARIOS.md` (a
+  60-scenario catalog), `docs/EVAL_SCOPE_DECISIONS.md` (which 14 of the 60
+  to build first and why), and `docs/EVAL_EXPANSION_SPEC.md` (the literal
+  implementation spec, written for "Claude Code (implementing agent)").
+  Implemented as specified, with a few real fixes found along the way:
+
+  1. **Fixed a real ground-truth bug in the process, not just added
+     scenarios.** The old `budget_overrun` scenario (single day at 1.4x
+     daily budget -> cut it) was wrong: Google Ads legitimately allows up to
+     ~2x daily overdelivery, so that would have taught the agent to act on
+     normal system behavior. Split into two: `single_day_overdelivery`
+     (1.6x for one day, correct answer: no action) and `sustained_overrun`
+     (>=3 of the last 5 days over 1.25x, correct answer: cut the budget).
+  2. **The spec's literal multiplier for `near_threshold_cpa` didn't
+     produce the intended ratio.** It called for cost x1.35 / conversions
+     x0.75 to land at "~1.8x baseline." But `analyst_data.py`'s Search
+     campaign already has a ~1.8x rising-CPA drift built into its 14-day
+     window (the original "why did CPA rise" Phase 2 demo narrative) --
+     applying the spec's multiplier on top of that drift compounded to
+     3.45x, not 1.8x. Fixed by computing the target ratio directly against
+     the already-generated prior days (deterministic, no live-tuning
+     needed) instead of a flat multiplier -- lands at 1.97x, comfortably
+     under the 2x pause threshold but clearly elevated versus plain
+     baseline (1.83x).
+  3. **A second data-modeling bug found by cross-checking scenarios against
+     each other, not caught by the spec:** `root_cause_term`'s dominant
+     search term was originally sized to 80% of *that single day's* Search
+     cost (~$80), but search terms in this mock data are aggregate/rolling
+     stats, not per-day figures -- so the always-present "free retail
+     products" term ($88.75) would *also* look like a >60%-of-day dominant
+     term on every low-spend day, including the plain `cpa_spike` scenario,
+     which must NOT redirect to a keyword exclusion. Fixed by comparing a
+     term's cost against the campaign's *total 14-day window cost* (~$794)
+     instead of one day's cost -- consistent units, and it stopped the
+     false cross-trigger.
+  4. **The new "minimum-data gate" (spec: suppress CPA judgment below 1.0
+     conversions) collided with the existing `cpa_spike` scenario**, whose
+     established recipe (conversions x0.4) produces ~0.6 conversions on the
+     spike day -- just under the spec's stated 1.0 gate, which would have
+     made `cpa_spike` silently produce no action. Tightened the gate to
+     0.5 (cleanly between `low_volume_noise`'s 0.3 and `cpa_spike`'s 0.6)
+     rather than changing an already-established scenario's recipe.
+
+  Implemented all 6 new rule branches in `_monitor_with_rules` in the exact
+  order the spec specified (tracking-breakage check before the CPA check,
+  root-cause precedence before pausing, etc.), and mirrored every rule into
+  `MONITORING_SYSTEM_PROMPT` with matching thresholds, plus the explicit
+  anti-prompt-injection line the spec called for. Added `temperature=0` to
+  both OpenAI calls in `operator_agent.py`. Extended `ads_agent/evals.py`
+  with `must_not_actions`, `summary_must_mention`, and
+  `expected_budget_direction` checks, and k-run consistency scoring
+  (`EVAL_LLM_RUNS`, default 5 -- a scenario only passes the LLM path if
+  every one of the k runs passes, not on average).
+
+  **Deterministic path: 14/14, every run** -- the reference implementation
+  works exactly as designed. **A real, fresh LLM-path run (gpt-4.1-mini, 5
+  reps per scenario): 19/28 rows, restraint score 33%, only 5 of 14
+  scenarios fully consistent across all 5 reps.** Concretely: it
+  repeatedly flagged the $88.75 "free retail products" term as wasteful
+  across multiple unrelated scenarios despite an explicit "$300 minimum"
+  rule stated in its own instructions, and on one full run of 5 failed to
+  detect an unambiguous 6.8x CPA spike (`cpa_spike`) at all -- calling the
+  account healthy when it plainly wasn't. Per the spec's explicit
+  instruction ("LLM score itself is a finding, not a gate -- do not tune
+  scenarios to make the LLM pass"), none of this was prompt-engineered
+  away; it's reported as-is. Full trace saved to
+  `ads_agent/eval_runs/20260706T103227Z.json`. Test suite extended to 60
+  tests (14 new: scenario-window mapping, S4/S9 multi-day mutations, S14
+  empty-campaign handling, and each of the new rule branches) -- **60/60
+  passing.** README's Evals section, phase table, and the docs/ file tree
+  updated to reflect the real numbers above, not the earlier, milder
+  4-scenario finding.
+
+  Housekeeping: the three `EVAL_*.md` docs arrived duplicated at both repo
+  root and `docs/` (one, `EVAL_SCENARIOS.md`, in two different revisions --
+  `docs/`'s had an added "in plain English" column). Kept the `docs/`
+  copies only, matching this repo's existing convention of keeping
+  supplementary docs out of the root.
+
 ---
 
 ## Paste-ready custom instructions (for a claude.ai Project)

@@ -119,3 +119,28 @@ class ChangeTicket(BaseModel):
     proposed_value: str = Field(min_length=1, max_length=200)
     reason: str = Field(min_length=10, max_length=500)
     expected_impact: str = Field(min_length=10, max_length=500)
+
+
+class MonitoringResult(BaseModel):
+    """Phase 5's proactive check: "does anything need a human's attention today?"
+
+    Unlike ChangeTicket (drafted in response to a specific human request),
+    this is what operator_agent.monitor_and_propose() produces when nothing
+    prompted it except "look at current account state." action_needed=False
+    is a first-class, expected outcome -- a healthy day should say so rather
+    than manufacturing a change to justify the check.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    action_needed: bool
+    summary: str = Field(min_length=10, max_length=300)
+    ticket: ChangeTicket | None = None
+
+    @model_validator(mode="after")
+    def ticket_matches_action_needed(self) -> "MonitoringResult":
+        if self.action_needed and self.ticket is None:
+            raise ValueError("action_needed=True requires a ticket.")
+        if not self.action_needed and self.ticket is not None:
+            raise ValueError("action_needed=False must not include a ticket.")
+        return self

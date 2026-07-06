@@ -17,9 +17,9 @@ import re
 from datetime import date, timedelta
 
 from ads_agent.analyst_data import (
-    MOCK_CAMPAIGNS,
-    MOCK_SEARCH_TERMS,
     generate_daily_performance,
+    generate_search_terms,
+    get_campaigns_for_day,
 )
 from ads_agent.operator_state import get_campaign_overrides
 
@@ -37,7 +37,11 @@ def _effective_status(campaign) -> str:
 
 
 def list_campaigns() -> list[dict[str, object]]:
-    """Return every campaign in the account with its type, status, and budget."""
+    """Return every campaign in the account with its type, status, and budget.
+
+    Empty during the "empty_account" scenario window (S14) -- see
+    get_campaigns_for_day.
+    """
 
     return [
         {
@@ -47,7 +51,7 @@ def list_campaigns() -> list[dict[str, object]]:
             "status": _effective_status(campaign),
             "daily_budget": _effective_budget(campaign),
         }
-        for campaign in MOCK_CAMPAIGNS
+        for campaign in get_campaigns_for_day()
     ]
 
 
@@ -78,7 +82,7 @@ def get_search_terms(campaign_id: str | None = None) -> list[dict[str, object]]:
     showing up as "wasting spend" in later analyst answers.
     """
 
-    terms = MOCK_SEARCH_TERMS
+    terms = generate_search_terms()
     if campaign_id:
         terms = [term for term in terms if term.campaign_id == campaign_id]
 
@@ -88,7 +92,7 @@ def get_search_terms(campaign_id: str | None = None) -> list[dict[str, object]]:
     # blocking unrelated terms that merely contain "free" as a substring.
     negative_keywords_by_campaign = {
         campaign.id: set(get_campaign_overrides(campaign.id).get("negative_keywords", []))
-        for campaign in MOCK_CAMPAIGNS
+        for campaign in get_campaigns_for_day()
     }
     terms = [
         term
@@ -122,7 +126,7 @@ def get_budget_pacing() -> list[dict[str, object]]:
 
     rows = generate_daily_performance(days=days_elapsed)
     pacing: list[dict[str, object]] = []
-    for campaign in MOCK_CAMPAIGNS:
+    for campaign in get_campaigns_for_day():
         daily_budget = _effective_budget(campaign)
         spend_so_far = round(sum(row.cost for row in rows if row.campaign_id == campaign.id), 2)
         expected_spend = round(daily_budget * days_elapsed, 2)

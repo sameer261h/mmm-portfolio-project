@@ -714,7 +714,7 @@ subject to Σ<sub>i</sub> spend<sub>i</sub> = <span style="color:var(--model)">t
         <div class="maprow"><div class="phase">Operator</div><div class="lvl" style="color:var(--human)">L3</div><div class="desc">observes account state, plans a proposal — a human approves or rejects before anything real applies</div></div>
         <div class="maprow"><div class="phase">Execution</div><div class="lvl" style="color:var(--code)">live</div><div class="desc">verified against a real Google Ads test account; Meta Ads verified the same way for Campaign/Ad Set/Ad Creative, with the final Ad object blocked only by an external payment-method/region requirement</div></div>
       </div>
-      <p class="body-text" style="margin-top:1.4rem"><strong>The honest gap:</strong> 37 tests check code correctness — schema validation, guardrail math, mock writes. None of them yet score whether a tool choice or a proposed action was actually <em>good</em>. Named here on purpose, not glossed over.</p>
+      <p class="body-text" style="margin-top:1.4rem"><strong>Code tests vs. evals:</strong> 45 pytest tests check code correctness — schema validation, guardrail math, mock writes. A separate eval harness (<code>ads_agent/evals.py</code>) scores decision quality on a scripted synthetic scenario ladder, comparing a deterministic fallback against the LLM path. It already found a real gap: the LLM scores 3/4 on every run so far, sometimes proposing a change its own stated reasoning says shouldn't trigger one — a run-to-run reliability gap, not a single fixable prompt bug. Reported here on purpose, not glossed over.</p>
     </div>
   </section>
 

@@ -4,23 +4,23 @@ from __future__ import annotations
 
 import json
 import os
-import re
 
 import streamlit as st
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
 from ads_agent.analyst_agent import ask_analyst
-from ads_agent.analyst_tools import list_campaigns
+from ads_agent.apply_change import apply_change_ticket
 from ads_agent.audit import write_audit_event
 from ads_agent.google_ads_client import get_ads_client
 from ads_agent.guardrails import GuardrailError
 from ads_agent.meta_ads_client import get_meta_ads_client
 from ads_agent.meta_planner import generate_meta_campaign_plan
 from ads_agent.meta_schemas import MetaCampaignPlan
-from ads_agent.operator_agent import propose_change
+from ads_agent.operator_agent import monitor_and_propose, propose_change
 from ads_agent.planner import generate_campaign_plan
-from ads_agent.schemas import CampaignPlan, ChangeAction
+from ads_agent.schemas import CampaignPlan
+from ads_agent.simulation_state import advance_simulated_day, get_simulated_day, reset_simulation
 
 
 load_dotenv()
@@ -224,27 +224,7 @@ if st.session_state.change_ticket:
     with col_approve:
         if st.button("Approve and apply", type="primary"):
             try:
-                client = get_ads_client()
-                if ticket.action == ChangeAction.UPDATE_BUDGET:
-                    current = next(c for c in list_campaigns() if c["id"] == ticket.campaign_id)
-                    new_budget = float(re.sub(r"[^0-9.]", "", ticket.proposed_value))
-                    result = client.update_campaign_budget(
-                        campaign_id=ticket.campaign_id,
-                        campaign_name=ticket.campaign_name,
-                        current_daily_budget=current["daily_budget"],
-                        new_daily_budget=new_budget,
-                        max_daily_budget=_max_daily_budget(),
-                    )
-                elif ticket.action == ChangeAction.PAUSE_CAMPAIGN:
-                    result = client.pause_campaign(
-                        campaign_id=ticket.campaign_id, campaign_name=ticket.campaign_name
-                    )
-                else:
-                    result = client.add_negative_keyword(
-                        campaign_id=ticket.campaign_id,
-                        campaign_name=ticket.campaign_name,
-                        keyword_text=ticket.proposed_value,
-                    )
+                result = apply_change_ticket(ticket, _max_daily_budget())
                 st.success(result.message)
                 st.json(result.operations)
                 st.session_state.change_ticket = None
@@ -254,6 +234,69 @@ if st.session_state.change_ticket:
     with col_reject:
         if st.button("Reject"):
             st.session_state.change_ticket = None
+            st.info("Change rejected -- nothing was applied.")
+
+st.divider()
+st.subheader("Simulated optimizer loop (Phase 5, synthetic data only)")
+st.caption(
+    "No real ad spend involved -- this advances an independent simulated-day "
+    "clock (ads_agent/simulation_state.py) through a scripted 4-scenario "
+    "ladder (healthy baseline -> CPA spike -> a wasteful search term -> "
+    "budget pacing overrun), calling the operator agent proactively each day "
+    "the same way a scheduled Cloud Scheduler run eventually would against a "
+    "real account. It still only *proposes* -- the same Approve/Reject gate "
+    "as Phase 3 above, nothing auto-applies."
+)
+
+st.write(f"Simulated day: **{get_simulated_day()}**")
+sim_col_advance, sim_col_reset = st.columns(2)
+with sim_col_advance:
+    if st.button("Advance 1 day"):
+        advance_simulated_day()
+        st.session_state.sim_change_ticket = None
+        st.session_state.sim_summary = None
+        st.rerun()  # otherwise the "Simulated day" line above already rendered
+        # this pass, using the pre-increment value -- Streamlit reruns
+        # top-to-bottom, so without this the display lags one click behind.
+with sim_col_reset:
+    if st.button("Reset simulation"):
+        reset_simulation()
+        st.session_state.sim_change_ticket = None
+        st.session_state.sim_summary = None
+        st.rerun()
+
+if "sim_change_ticket" not in st.session_state:
+    st.session_state.sim_change_ticket = None
+if "sim_summary" not in st.session_state:
+    st.session_state.sim_summary = None
+
+if st.button("Check account (run monitor_and_propose)", type="primary"):
+    with st.spinner("Checking synthetic account state..."):
+        monitoring_result = monitor_and_propose()
+    st.session_state.sim_summary = monitoring_result.summary
+    st.session_state.sim_change_ticket = monitoring_result.ticket
+
+if st.session_state.sim_summary:
+    st.markdown(f"**Monitoring summary:** {st.session_state.sim_summary}")
+
+if st.session_state.sim_change_ticket:
+    sim_ticket = st.session_state.sim_change_ticket
+    st.markdown("**Proposed change -- not yet applied**")
+    st.json(sim_ticket.model_dump())
+
+    sim_col_approve, sim_col_reject = st.columns(2)
+    with sim_col_approve:
+        if st.button("Approve and apply", key="sim_approve", type="primary"):
+            try:
+                result = apply_change_ticket(sim_ticket, _max_daily_budget())
+                st.success(result.message)
+                st.json(result.operations)
+                st.session_state.sim_change_ticket = None
+            except (GuardrailError, RuntimeError, NotImplementedError, StopIteration) as exc:
+                st.error(str(exc))
+    with sim_col_reject:
+        if st.button("Reject", key="sim_reject"):
+            st.session_state.sim_change_ticket = None
             st.info("Change rejected -- nothing was applied.")
 
 st.divider()

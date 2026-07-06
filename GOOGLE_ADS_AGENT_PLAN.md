@@ -310,6 +310,34 @@ Scheduled runs (Cloud Scheduler): pull performance, compare against MMM budget e
 auto-execute only small changes within caps, propose the rest. Burn-in on tiny real
 budgets for 2+ weeks before trusting it.
 
+**Synthetic precursor built (2026-07-06), not the real-money version above:**
+`ads_agent/simulation_state.py` + a scenario ladder in `analyst_data.py` let
+`operator_agent.monitor_and_propose()` run proactively against synthetic,
+sim-day-indexed data — no real spend, no Cloud Scheduler, no real account. Exposed
+in Streamlit as "Simulated optimizer loop," gated by the same human approve/reject
+as Phase 3. `ads_agent/evals.py` scores its decisions against a known-correct answer
+per scenario (see README's Evals section and HANDOFF.md for what it already found).
+This validates the *decision logic*; the real-money burn-in described above is
+still a separate, not-yet-started step.
+
+**Expanded 4 → 14 scenarios (2026-07-06, same day):** built from
+`docs/EVAL_EXPANSION_SPEC.md`, a scoped-down implementation of the full 60-scenario
+catalog in `docs/EVAL_SCENARIOS.md` (see `docs/EVAL_SCOPE_DECISIONS.md` for which 14
+and why). Fixed one real ground-truth bug in the process: the original
+`budget_overrun` scenario treated a single day at 1.4x daily budget as a problem,
+but Google Ads legitimately allows up to ~2x daily overdelivery — that scenario was
+rewritten as two: `single_day_overdelivery` (1.6x for one day, correctly no action)
+and `sustained_overrun` (>=3 of the last 5 days over 1.25x, correctly a budget cut).
+The other 10 new scenarios cover: a near-miss CPA ratio and a low-volume statistical
+fluke (restraint traps), a zero-click keyword guard, a conversion-tracking-breakage
+trap (the classic "don't mass-pause a healthy account" case), a root-cause-vs-symptom
+discrimination test (exclude the one keyword causing a CPA spike, don't pause the
+whole campaign), a budget-limited-winner case (the agent must be able to propose
+raising a budget, not just cutting one), missing-data and empty-account degenerate
+inputs, and a prompt-injection attempt embedded directly in a search term's text.
+Deterministic reference implementation: **14/14**, every run. See HANDOFF.md for
+the real LLM-path result this run produced.
+
 ## Stretch goal — Shopping campaigns
 Not scoped into any phase above yet. v1 only supports Search + Performance Max
 (PMax already covers Display/YouTube/Discover/Gmail inventory, so a standalone
@@ -339,3 +367,14 @@ purpose, to keep that submission matched to what's actually built).
   approval-gated Search + PMax campaign drafts from the MMM digital budget envelope.
   Tests pass (`4 passed`). Phase 0 credentials still pending before real Google Ads
   API mutation can be safely enabled.
+- 2026-07-06: Built a synthetic-data precursor to Phase 5 (see that section above) --
+  `ads_agent/simulation_state.py`, a 4-scenario ladder in `analyst_data.py`,
+  `operator_agent.monitor_and_propose()`, and `ads_agent/evals.py`, the first real
+  eval harness in this repo (scores decisions against a known-correct answer, not
+  just code correctness). Full detail, including a real LLM decision-quality gap the
+  harness caught, in `HANDOFF.md`. 45/45 tests passing.
+- 2026-07-06 (same day): Expanded the eval ladder from 4 to 14 scenarios per
+  `docs/EVAL_EXPANSION_SPEC.md` (see that section above for what's new). Fixed a
+  real ground-truth bug (the old budget_overrun scenario penalized normal Google
+  Ads overdelivery). Deterministic path: 14/14. Full test suite: 60/60 passing.
+  See `HANDOFF.md` for the full LLM-path result this expansion surfaced.

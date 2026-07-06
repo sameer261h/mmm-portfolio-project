@@ -12,18 +12,23 @@ if str(PROJECT_ROOT) not in sys.path:
 
 @pytest.fixture(autouse=True)
 def _clean_ads_state():
-    """Reset the on-disk audit log and operator-state overlay around each test.
+    """Reset the on-disk audit log, operator-state overlay, and simulated-day
+    clock around each test.
 
-    Phase 3 writes actually persist to these files, so without this, tests
-    that apply changes (or hit the daily rate limit) would pollute each
-    other's state across runs.
+    Phase 3 writes and Phase 5's simulated clock actually persist to these
+    files, so without this, tests that apply changes (or advance simulated
+    days, or hit the daily rate limit) would pollute each other's state
+    across runs.
     """
 
     from ads_agent.audit import AUDIT_LOG_PATH
     from ads_agent.operator_state import STATE_PATH
+    from ads_agent.simulation_state import STATE_PATH as SIM_STATE_PATH
 
     AUDIT_LOG_PATH.unlink(missing_ok=True)
     STATE_PATH.unlink(missing_ok=True)
+    SIM_STATE_PATH.unlink(missing_ok=True)
     yield
     AUDIT_LOG_PATH.unlink(missing_ok=True)
     STATE_PATH.unlink(missing_ok=True)
+    SIM_STATE_PATH.unlink(missing_ok=True)
