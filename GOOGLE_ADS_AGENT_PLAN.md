@@ -350,6 +350,44 @@ path will need anyway — not started, and lower priority while Meta Ads' real-A
 path is separately blocked on the payment-method/region issue in
 `META_ADS_AGENT_PLAN.md`.
 
+## Phase 7 — Autonomous initiation + eval-gated tiered autonomy (planned, not started)
+
+Full implementation spec: `docs/L4_AUTONOMY_SPEC.md` (written for "Claude Code
+(implementing agent)", same format as `docs/EVAL_EXPANSION_SPEC.md`); plain-English
+companion: `docs/L4_AUTONOMY_EXPLAINED.md`. Added to this plan on 2026-07-06 as
+documented scope only — no code has been written for this yet.
+
+**What it would move**, in one line: the operator agent currently only runs when a
+human clicks "Check account" (Phase 5's simulated loop) or asks it a question (Phase
+3). This spec would let it start its own monitoring cycles, remember what it
+proposed across runs (and not repeat/escalate accordingly), and — only for
+`ADD_NEGATIVE_KEYWORD`, only if `AUTONOMY_ENABLED=true` (default `false`), and only
+while the latest eval run (`docs/EVAL_EXPANSION_SPEC.md`'s harness) shows that
+specific action passing every relevant scenario at full k/k consistency — apply that
+one low-risk, reversible action class without a human click first. `UPDATE_BUDGET`
+and `PAUSE_CAMPAIGN` are hardcoded high-risk forever in the spec and never become
+auto-applicable.
+
+**Mandatory honest-labeling rule, carried over from the spec itself:** this work
+does **not** make the system "L4." The correct description afterward is **"L3 +
+autonomous initiation + eval-earned auto-apply for one action class"** — never
+"fully autonomous." Any README/docs update from this phase must use that exact
+phrasing, matching this repo's existing discipline about not overselling agent
+levels.
+
+**Four parts, in the spec's own build order** (A2→A1→A4→B→C→D; C is inert until
+eval runs exist, D is independent and droppable):
+- **Part A** — a scheduled/on-demand monitoring cycle (`ads_agent/autonomous_run.py`), a proposal queue with dedupe, and an optional Slack notify adapter. Adds a "Proposal Inbox" to Streamlit.
+- **Part B** — outcome memory across cycles (`ads_agent/run_history.py`): tags each prior proposal `resolved`/`unresolved`/`too_early` and feeds that history back into both the LLM prompt and the deterministic rules so the agent doesn't repeat a rejected or still-pending action, and escalates (e.g. budget cut → pause) when a prior fix didn't work.
+- **Part C** — the eval-gated auto-apply policy (`ads_agent/autonomy_policy.py`) described above, with an undo affordance in the inbox for anything auto-applied.
+- **Part D** — an MMM drift monitor (`ads_agent/mmm_drift.py`) comparing actual spend share per channel against the MMM's recommended split, proposing a rebalancing `UPDATE_BUDGET` ticket (always approval-gated, never auto-applied) when drift exceeds 10 points.
+
+**Global constraints the spec itself sets, worth preserving if this gets built:**
+mock mode stays the default everywhere; every new write still goes through the
+single existing `apply_change_ticket` path (no second write path introduced); every
+new behavior emits an audit event; all new state files follow the existing
+JSON/JSONL-in-`ads_agent/` pattern with `tests/conftest.py`-style cleanup.
+
 ## Stretch goal — Shopping campaigns
 Not scoped into any phase above yet. v1 only supports Search + Performance Max
 (PMax already covers Display/YouTube/Discover/Gmail inventory, so a standalone
@@ -390,3 +428,8 @@ purpose, to keep that submission matched to what's actually built).
   real ground-truth bug (the old budget_overrun scenario penalized normal Google
   Ads overdelivery). Deterministic path: 14/14. Full test suite: 60/60 passing.
   See `HANDOFF.md` for the full LLM-path result this expansion surfaced.
+- 2026-07-06 (same day): Added Phase 7 (autonomous initiation + eval-gated tiered
+  autonomy) to this plan as **documented scope only** -- Sameer asked to add
+  `docs/L4_AUTONOMY_SPEC.md` to the project's scope; confirmed with him this meant
+  planning, not building, before touching any code. See the Phase 7 section above.
+  No code written for this yet.

@@ -750,6 +750,25 @@ approval, deployed on Cloud Run."
   asked for this explicitly so the README reads as "here's the roadmap,"
   not "here's a finished list."
 
+- 2026-07-06 (same day): **Added Phase 7 (autonomous initiation + eval-gated
+  auto-apply) to the plan as documented scope only.** Sameer provided
+  `docs/L4_AUTONOMY_SPEC.md` (a full implementation spec written for "Claude
+  Code," same format as `docs/EVAL_EXPANSION_SPEC.md`) plus
+  `docs/L4_AUTONOMY_EXPLAINED.md` (a plain-English companion) and asked to
+  "add that to the scope of the project." Given the spec includes real
+  auto-apply behavior (eval-gated, kill-switched off by default, but a
+  genuine first step past "only acts when a human clicks"), asked Sameer
+  whether "add to scope" meant documentation only or asked for
+  implementation now; he confirmed documentation only. Added a Phase 7
+  section to `GOOGLE_ADS_AGENT_PLAN.md` (summarizing all 4 parts: scheduled
+  monitoring + proposal inbox, outcome memory across runs, the eval-gated
+  auto-apply policy, and an MMM-drift rebalancing monitor) and a row to
+  README's phase table, both marked "planned only, no code written." Carried
+  forward the spec's own non-negotiable rule into both docs: this work, if
+  built, must never be described as "L4" or "fully autonomous" — the correct
+  label is "L3 + autonomous initiation + eval-earned auto-apply for one
+  action class." No code changes in this entry -- pure planning.
+
 ---
 
 ## Paste-ready custom instructions (for a claude.ai Project)

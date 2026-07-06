@@ -44,6 +44,7 @@ The MMM's recommended budget is the **strategic layer**; this agent is the **tac
 | 4 — Real campaign creation | Actual Google Ads API calls (Search + Performance Max) against a real test account | ✅ Verified live |
 | 5 — Simulated optimizer loop | Proactive monitoring (`monitor_and_propose`) over a scripted, sim_day-indexed synthetic-data ladder (14 scenarios) — no real ad spend; same human-approval gate as Phase 3 | ✅ Built — synthetic only, not yet wired to a real scheduled run |
 | 6 — Meta Ads | Same planner → paused-campaign → approval-gate pattern, activating the MMM's `social` budget on Facebook/Instagram | 🟢 Campaign/Ad Set/Ad Creative verified live; final Ad object blocked on payment-method/region (external, see `META_ADS_AGENT_PLAN.md`) |
+| 7 — Autonomous initiation + eval-gated auto-apply | Self-initiated monitoring cycles, a proposal queue, outcome memory across runs, and auto-apply for exactly one low-risk action class (`ADD_NEGATIVE_KEYWORD`), earned by eval consistency and kill-switched off by default | 📋 Planned only — see `GOOGLE_ADS_AGENT_PLAN.md` Phase 7, `docs/L4_AUTONOMY_SPEC.md` (technical) / `docs/L4_AUTONOMY_EXPLAINED.md` (plain English); no code written |
 
 **What makes it agentic, specifically:** the analyst agent decides *which* of four tools to call based on the question, reads the results, and can call another tool based on what it learned before answering — a genuine reason → act → observe loop, not a single prompt-response call. The operator agent reasons over live account state to decide *what* action to propose and *which* campaign to target. Both feed into real, gated, real-world actions (Phase 4), not just generated text.
 
@@ -56,6 +57,12 @@ Honest breakdown, not marketing — what each agent can actually do, named per [
 | **Tools** | none — one structured-output call | `list_campaigns`, `get_performance`, `get_search_terms`, `get_budget_pacing` (read-only) | reads the same 4 tools, writes via `update_campaign_budget` / `pause_campaign` / `add_negative_keyword` (human-gated) |
 | **Skill** | `SYSTEM_PROMPT` in `planner.py` / `meta_planner.py`: draft a paused campaign from a budget envelope | `SYSTEM_PROMPT` in `analyst_agent.py`: answer performance questions using only read tools | `SYSTEM_PROMPT` in `operator_agent.py`: propose one change as a `ChangeTicket`, never apply it |
 | **Level** | **L1** — single prompt → structured response, no tool loop, no state | **L2** — the model decides which tool(s) to call and can chain a second call on what it learns | **L3** — observes account state, plans a proposal, but a human approves before anything real happens |
+
+Planned (not built — see Phase 7 in `GOOGLE_ADS_AGENT_PLAN.md`): self-initiated
+monitoring cycles and eval-earned auto-apply for one low-risk action class. The
+honest label for that future state, set in advance so it doesn't get oversold
+later, is **"L3 + autonomous initiation + eval-earned auto-apply for one action
+class"** — not "L4," not "fully autonomous."
 
 **Evals:** the 60 pytest tests check *code correctness* (schema validation, guardrail math, mock writes) — separately, `ads_agent/evals.py` is an actual eval: a scripted, sim_day-indexed synthetic scenario ladder of **14 decision-quality scenarios** (see `docs/EVAL_SCENARIOS.md` for the full 60-scenario catalog this was scoped down from, and `docs/EVAL_SCOPE_DECISIONS.md` for exactly why these 14) with a *known-correct* action per scenario, run through `operator_agent.monitor_and_propose()` and scored — not just "did the code run," but "was the proposed action actually right." Coverage spans both directions of every action the agent can take (pause, cut budget, raise budget, exclude a keyword), restraint under four distinct kinds of temptation (a near-miss CPA ratio, a low-volume statistical fluke, Google's normal single-day overdelivery, a zero-click keyword), a root-cause-vs-symptom discrimination test, and three data-integrity edge cases (missing data, an empty account, a prompt-injection attempt embedded in account data). Each scenario runs once against the deterministic fallback (which can't vary) and, if `OPENAI_API_KEY` is set, 5 times against the OpenAI path — a scenario only passes the LLM path if all 5 runs pass. Run it with `python -m ads_agent.evals`.
 
@@ -123,7 +130,9 @@ mmm-portfolio-project/
     ├── MMM_Project_Guide.pdf / MMM_Study_Guide.html
     ├── EVAL_SCENARIOS.md      ← the full 60-scenario eval catalog (Google + Meta), only 14 built so far
     ├── EVAL_SCOPE_DECISIONS.md ← which 14, and exactly why each of the other 46 was deferred
-    └── EVAL_EXPANSION_SPEC.md  ← the implementation spec ads_agent/evals.py's 14 scenarios were built from
+    ├── EVAL_EXPANSION_SPEC.md  ← the implementation spec ads_agent/evals.py's 14 scenarios were built from
+    ├── L4_AUTONOMY_SPEC.md    ← Phase 7 spec (planned only, not built) — see GOOGLE_ADS_AGENT_PLAN.md
+    └── L4_AUTONOMY_EXPLAINED.md ← same spec, in plain English
 ```
 
 ## Setup (one time, ~15 min)
