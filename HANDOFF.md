@@ -564,6 +564,24 @@ approval, deployed on Cloud Run."
   UNVERIFIED and will need a live debugging pass once those accounts exist —
   see `META_ADS_AGENT_PLAN.md`'s Phase 0 for the exact setup steps.
 
+- 2026-07-06: **Meta Phase 0 completed, then a live debugging pass on
+  `meta_ads_builders.py`** (same approach as Google Ads Phase 4) — full detail in
+  `META_ADS_AGENT_PLAN.md`'s status log, short version here. Fixed 3 real Meta API
+  bugs in the builder (missing `is_adset_budget_sharing_enabled`, missing
+  `bid_strategy`, missing `targeting_automation.advantage_audience`) plus 2 `.env`/
+  config bugs (wrong `META_ADS_PAGE_ID`, a stray typo in `META_ADS_APP_ID`, and the
+  System User needing an explicit Page-asset assignment + the Meta App needing to be
+  published Live). With those fixed, **Campaign → Ad Set → Ad Creative all
+  live-verified working** against the real account (`act_1419013410289450`). The 4th
+  object (`Ad`) is code-complete but blocked on a genuine external constraint: Meta
+  requires a payment method before creating an `Ad` object even if it's permanently
+  `PAUSED`, and Sameer's available cards (Indian, INR) don't clear his USD-denominated
+  ad account's billing requirement — a known India-advertiser pain point, not fixable
+  in code. Creating a new ad account isn't a quick workaround either (that section is
+  greyed out at the Business level). **Accepted as final for this project: 3 of 4
+  object types verified live**, same honesty standard as everywhere else in this repo.
+  Full test suite: 37/37 passing.
+
 ---
 
 ## Paste-ready custom instructions (for a claude.ai Project)

@@ -42,7 +42,7 @@ The MMM's recommended budget is the **strategic layer**; this agent is the **tac
 | 2 — Analyst agent | Answers questions ("why did CPA rise?") by autonomously deciding which read-only tool to call — zero write access | ✅ Live |
 | 3 — Operator agent | Proposes budget/pause/negative-keyword changes as a structured ticket; **only applies after human approval** | ✅ Live |
 | 4 — Real campaign creation | Actual Google Ads API calls (Search + Performance Max) against a real test account | ✅ Verified live |
-| 6 — Meta Ads | Same planner → paused-campaign → approval-gate pattern, activating the MMM's `social` budget on Facebook/Instagram | 🟡 Built, mock-mode only — real API pending Meta account setup |
+| 6 — Meta Ads | Same planner → paused-campaign → approval-gate pattern, activating the MMM's `social` budget on Facebook/Instagram | 🟢 Campaign/Ad Set/Ad Creative verified live; final Ad object blocked on payment-method/region (external, see `META_ADS_AGENT_PLAN.md`) |
 
 **What makes it agentic, specifically:** the analyst agent decides *which* of four tools to call based on the question, reads the results, and can call another tool based on what it learned before answering — a genuine reason → act → observe loop, not a single prompt-response call. The operator agent reasons over live account state to decide *what* action to propose and *which* campaign to target. Both feed into real, gated, real-world actions (Phase 4), not just generated text.
 

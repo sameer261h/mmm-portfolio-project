@@ -49,17 +49,21 @@ billing. Still, real API calls need a real Business Manager, App, Ad Account, an
    account, this is typically not required, but budget time for it if Meta asks.
 
 ### Phase 0 done when you have:
-- [ ] Business Manager created
-- [ ] A Facebook Page created, Page ID noted
-- [ ] Ad Account created, Ad Account ID noted
-- [ ] Developer App created, App ID + App Secret noted
-- [ ] Long-lived access token generated with `ads_management` scope
-- [ ] All five values added to `.env` (`META_ADS_APP_ID`, `META_ADS_APP_SECRET`,
+- [x] Business Manager created
+- [x] A Facebook Page created, Page ID noted
+- [x] Ad Account created, Ad Account ID noted
+- [x] Developer App created, App ID + App Secret noted
+- [x] Long-lived access token generated with `ads_management` scope (System User token)
+- [x] All five values added to `.env` (`META_ADS_APP_ID`, `META_ADS_APP_SECRET`,
       `META_ADS_ACCESS_TOKEN`, `META_ADS_AD_ACCOUNT_ID`, `META_ADS_PAGE_ID`)
 
-None of this is done yet as of 2026-07-05 — Sameer confirmed no Business Manager, App,
-or Ad Account exist. Everything below was built in mock mode and against Meta's
-documented API shape, not yet run live.
+**Phase 0 complete as of 2026-07-06** — see status log below for the live verification.
+
+**Update 2026-07-06: Phase 0 is now complete** (Business Portfolio, Page, Ad Account,
+Developer App, System User access token — all created and live-verified, see status log
+below). Everything below was originally built in mock mode against Meta's documented API
+shape; the real-API builder (`meta_ads_builders.py`) is next in line for the same kind
+of live debugging pass Google Ads Phase 4 needed.
 
 ---
 
@@ -127,3 +131,97 @@ Meta campaigns are live and there's real performance data to ask questions about
   real-API builder, Streamlit UI, tests). Sameer confirmed no Meta Business Manager /
   App / Ad Account / Page exist yet — Phase 0 above is the next step before any of the
   real-API code can be live-verified.
+- 2026-07-06: **Phase 0 completed.** Created a Business Portfolio, a Facebook Page
+  ("Retail Company"), a Meta developer app (Marketing API use case), and an Ad Account —
+  hit one real snag along the way: the first Business Portfolio got a "Business is not
+  allowed to claim App" restriction (Meta's abuse-detection flagging a new
+  business/account combo), resolved by Sameer outside this session (app creation
+  succeeded on retry). Also had to create a second Ad Account after the first attempt,
+  now `act_1419013410289450`. Generated a long-lived System User access token (Business
+  Settings → Users → System users → Add Assets → Generate New Token, scoped to
+  `ads_management`) rather than a short-lived Graph API Explorer token, matching the
+  plan's stated preference. All five values
+  (`META_ADS_APP_ID`/`META_ADS_APP_SECRET`/`META_ADS_PAGE_ID`/`META_ADS_AD_ACCOUNT_ID`/
+  `META_ADS_ACCESS_TOKEN`) written to `.env`, confirmed set via length-only checks (no
+  secret values ever printed to chat). **Live-verified**, not just assumed: a real
+  `GET /act_1419013410289450?fields=name,account_status,currency` Graph API call
+  returned actual account data (name "Agents Testing", `account_status: 1` = active,
+  currency USD) — the token and ad account access genuinely work.
+
+  Also fixed an unrelated `.env` corruption found while verifying (same class of bug
+  HANDOFF.md already logged once before): `GOOGLE_ADS_REFRESH_TOKEN` and
+  `GOOGLE_ADS_CUSTOMER_ID` had been pasted onto one line with no newline between them,
+  silently dropping the `GOOGLE_ADS_CUSTOMER_ID` line entirely. Split back into two
+  lines; confirmed with Sameer that the customer/login IDs themselves
+  (`2676053905`/`7416088297`) are current, live test accounts, not stale ones — only the
+  formatting was broken, no values were changed.
+
+  **Not done yet:** `meta_ads_builders.py` (the real-API campaign creation code) is
+  still unverified against this live account — that's the next step, and per the
+  Google Ads Phase 4 precedent, expect a real debugging pass once we actually try it.
+
+- 2026-07-06 (same day): **Live debugging pass on `meta_ads_builders.py`, same pattern
+  as Google Ads Phase 4.** Ran `get_meta_ads_client().create_paused_campaigns(...)` for
+  real against `act_1419013410289450` with `META_ADS_MUTATE_ENABLED=true` set as a
+  process-local override only (never written to `.env`, which stays `false`). Found and
+  fixed 3 real code bugs plus 2 real `.env`/account-config bugs before hitting a genuine
+  external blocker.
+
+  **Code fixes in `ads_agent/meta_ads_builders.py`** (all confirmed necessary by real
+  API responses, not guessed):
+  1. Campaign creation needs `is_adset_budget_sharing_enabled: False` explicitly — Meta
+     now requires this whenever budget lives on the ad set rather than the campaign
+     (`error_subcode 4834011`).
+  2. Ad set creation needs an explicit `bid_strategy` — added
+     `AdSet.BidStrategy.lowest_cost_without_cap` (auto-bid, no manual cap) since none of
+     this project's plans specify a bid amount (`error_subcode 2490487`).
+  3. Ad set targeting needs `targeting_automation: {"advantage_audience": 0}` — newly
+     required by Meta; set to `0` (off) since this project's age/geo targeting is
+     deliberate and shouldn't be silently widened by Meta's Advantage+ audience
+     expansion (`error_subcode 1870227`).
+
+  **Config fixes, found only by testing live (not visible from reading code):**
+  4. `.env`'s `META_ADS_PAGE_ID` was simply wrong — `61591503430268` instead of the
+     Business's actual owned Page ID `1182521951615637` ("Retail Company"). Confirmed
+     via `GET /{business_id}/owned_pages`. Also fixed a stray typo in
+     `META_ADS_APP_ID` (trailing `c`: `1033242915760732c` → `1033242915760732`) found
+     while cross-checking against the `/debug_token` response — it hadn't broken
+     anything yet since app_id isn't strictly validated on every call, but was wrong.
+  5. The System User had `ads_management`/`pages_manage_ads` *scopes* on its token but
+     had never actually been assigned the Page as an asset in Business Settings
+     (`/me/accounts` returned empty) — fixed by Sameer via Business Settings → Users →
+     System Users → Add Assets → Pages → "Retail Company" → Full Control. Separately,
+     the Meta developer app itself was still in Development Mode, which blocks ad
+     creatives from referencing a real Page (`error_subcode 1885183`) — fixed by
+     publishing the app to Live mode (required Privacy Policy URL + icon + category
+     under App Settings → Basic first).
+
+  With all 5 of the above fixed, live-verified in order: **Campaign → Ad Set → Ad
+  Creative all created successfully** against the real account (paused, confirmed via
+  the account's `/campaigns` edge — 8 real campaign objects exist from the debugging
+  iterations, left in place since delete requires a permission this System User's ad
+  account role doesn't grant; harmless, paused, no spend, no audience ever served).
+
+  **Genuine external blocker on the final step (creating the `Ad` object itself):**
+  Meta requires a payment method on file before it will create an `Ad` object, even one
+  that stays `PAUSED` forever (Campaigns/Ad Sets/Creatives do not have this requirement
+  — only discovered by hitting it live: `error_subcode 1359188`, "No payment method").
+  This contradicts what Phase 0 above assumed ("No payment method needs to be attached
+  to build and test paused campaigns") — that's only true for 3 of the 4 objects.
+  Sameer's ad account is USD-denominated but his available cards are Indian
+  (INR-issued) without international/forex transactions enabled — a well-known Meta
+  Ads pain point for India-based advertisers, not fixable in code. Adding a payment
+  method is also currently blocked at the Business level (Ad Accounts section
+  greyed out — likely a new/unverified-Business limit on how many ad accounts or
+  billing profiles can be created), so a second ad account with different
+  region/currency isn't a quick workaround either.
+
+  **Final status, accepted as done for this project:** 3 of 4 Meta object types
+  (Campaign, Ad Set, Ad Creative) are live-verified working. The 4th (`Ad`) is
+  code-complete and believed correct (same construction pattern as the other 3, all of
+  which needed and got real fixes) but blocked from live verification by an external
+  billing/region constraint outside this codebase's control. Rebuilding the entire
+  Meta identity stack (new email, Facebook account, Page, Business, App, tokens) was
+  considered and rejected — the blocker is tied to Sameer's India-based
+  identity/billing profile, not this specific account, so a fresh Business Portfolio
+  would very likely hit the same wall. Full test suite: 37/37 passing throughout.

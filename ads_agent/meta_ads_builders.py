@@ -59,6 +59,10 @@ def _targeting_for(campaign_draft: MetaCampaignDraft) -> dict[str, object]:
         "geo_locations": {"countries": _country_codes(campaign_draft.geo_targets)},
         "age_min": campaign_draft.age_min,
         "age_max": campaign_draft.age_max,
+        # Now a required field ("Advantage audience flag required",
+        # error_subcode 1870227). 0 = off, since this draft's age/geo targeting
+        # is deliberate and shouldn't be silently widened by Meta's expansion.
+        "targeting_automation": {"advantage_audience": 0},
     }
     if campaign_draft.genders != ["all"]:
         targeting["genders"] = [_GENDER_CODES[g] for g in campaign_draft.genders if g in _GENDER_CODES]
@@ -88,6 +92,10 @@ def create_meta_campaign_from_draft(
             Campaign.Field.objective: campaign_draft.objective.value,
             Campaign.Field.status: Campaign.Status.paused,
             "special_ad_categories": [],
+            # Budget lives on the ad set (not the campaign), so Meta requires
+            # this to be explicit -- otherwise: "Must specify True or False in
+            # is_adset_budget_sharing_enabled field" (error_subcode 4834011).
+            "is_adset_budget_sharing_enabled": False,
         }
     )
 
@@ -100,6 +108,10 @@ def create_meta_campaign_from_draft(
             AdSet.Field.daily_budget: int(round(campaign_draft.daily_budget * 100)),
             AdSet.Field.billing_event: AdSet.BillingEvent.impressions,
             AdSet.Field.optimization_goal: _OPTIMIZATION_GOAL_BY_OBJECTIVE[campaign_draft.objective],
+            # Auto-bid, no manual cap -- avoids "Bid amount or bid constraints
+            # required for bid strategy" (error_subcode 2490487), which fires
+            # if bid_strategy is left unset.
+            AdSet.Field.bid_strategy: AdSet.BidStrategy.lowest_cost_without_cap,
             AdSet.Field.targeting: _targeting_for(campaign_draft),
             AdSet.Field.status: AdSet.Status.paused,
         }

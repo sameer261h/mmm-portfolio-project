@@ -1,0 +1,288 @@
+<meta charset="utf-8">
+<title>Executive Brief — MMM + Agentic Ads System</title>
+<script>document.documentElement.classList.add('js');</script>
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+  }
+
+  :root {
+    --paper: #eff1ec;
+    --paper-raised: #e7eae3;
+    --ink: #16211f;
+    --ink-soft: #4b5754;
+    --ink-faint: #7a847f;
+    --model: #1f6b68;
+    --model-tint: #d7e6e4;
+    --reasoning: #9c6a2a;
+    --reasoning-tint: #ecdfc7;
+    --human: #a8563e;
+    --human-tint: #ecdad2;
+    --code: #55606b;
+    --code-tint: #dfe2e5;
+    --line: rgba(22, 33, 31, 0.14);
+    --line-strong: rgba(22, 33, 31, 0.28);
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-body: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #101715; --paper-raised: #16201d; --ink: #edefea; --ink-soft: #a9b3ae; --ink-faint: #6f7975;
+      --model: #59bcb5; --model-tint: #17302e; --reasoning: #e0a855; --reasoning-tint: #33280f;
+      --human: #e08a70; --human-tint: #33201a; --code: #a7b2ba; --code-tint: #232a2e;
+      --line: rgba(237, 239, 234, 0.14); --line-strong: rgba(237, 239, 234, 0.26);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #101715; --paper-raised: #16201d; --ink: #edefea; --ink-soft: #a9b3ae; --ink-faint: #6f7975;
+    --model: #59bcb5; --model-tint: #17302e; --reasoning: #e0a855; --reasoning-tint: #33280f;
+    --human: #e08a70; --human-tint: #33201a; --code: #a7b2ba; --code-tint: #232a2e;
+    --line: rgba(237, 239, 234, 0.14); --line-strong: rgba(237, 239, 234, 0.26);
+  }
+  :root[data-theme="light"] {
+    --paper: #eff1ec; --paper-raised: #e7eae3; --ink: #16211f; --ink-soft: #4b5754; --ink-faint: #7a847f;
+    --model: #1f6b68; --model-tint: #d7e6e4; --reasoning: #9c6a2a; --reasoning-tint: #ecdfc7;
+    --human: #a8563e; --human-tint: #ecdad2; --code: #55606b; --code-tint: #dfe2e5;
+    --line: rgba(22, 33, 31, 0.14); --line-strong: rgba(22, 33, 31, 0.28);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: var(--font-body); overflow-x: hidden; }
+  ::selection { background: var(--model); color: var(--paper); }
+
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-faint); display: flex; align-items: center; gap: 0.6em;
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+
+  h1, h2 { font-family: var(--font-display); font-weight: 500; text-wrap: balance; margin: 0; }
+
+  .deck { height: 100vh; overflow-y: auto; scroll-snap-type: y proximity; }
+
+  .slide {
+    min-height: 100vh; scroll-snap-align: start; display: flex; align-items: center;
+    padding: 6.5rem 8vw 4.5rem calc(8vw + 40px); position: relative; border-bottom: 1px solid var(--line);
+  }
+  .slide:last-of-type { border-bottom: none; }
+
+  .slide-inner { max-width: 880px; width: 100%; }
+  html.js .slide-inner { opacity: 0; transform: translateY(14px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  html.js .slide-inner.in-view { opacity: 1; transform: translateY(0); }
+
+  .slide-num {
+    position: absolute; top: 2.6rem; left: calc(8vw + 40px);
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); letter-spacing: 0.08em;
+  }
+
+  h2.headline { font-size: clamp(2rem, 4.2vw, 3.2rem); line-height: 1.12; margin-top: 1rem; max-width: 15ch; }
+
+  .lede { font-size: 1.18rem; line-height: 1.65; color: var(--ink-soft); max-width: 58ch; margin-top: 1.4rem; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  p.body-text { font-size: 1.02rem; line-height: 1.7; color: var(--ink-soft); max-width: 60ch; margin: 1rem 0 0; }
+  p.body-text strong { color: var(--ink); font-weight: 600; }
+
+  .rail {
+    position: fixed; left: 1.6rem; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 0.9rem; z-index: 20;
+  }
+  .rail button { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; padding: 0; cursor: pointer; transition: transform 0.2s ease; }
+  .rail button.active { transform: scale(1.5); }
+
+  .progress-top { position: fixed; top: 0; left: 0; height: 2px; background: var(--model); z-index: 30; transition: width 0.15s ease; }
+
+  @media (max-width: 720px) {
+    .rail { display: none; }
+    .slide { padding: 5.5rem 6vw 3.5rem 6vw; }
+    .slide-num { left: 6vw; }
+  }
+
+  /* big stat row */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; margin-top: 2.2rem; }
+  @media (max-width: 800px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { border-top: 2px solid var(--line-strong); padding-top: 0.8rem; }
+  .stat .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: clamp(1.5rem, 3vw, 2.1rem); color: var(--model); font-weight: 600; line-height: 1; }
+  .stat .cap { font-size: 0.82rem; color: var(--ink-soft); margin-top: 0.5rem; line-height: 1.4; }
+
+  /* pipeline */
+  .pipeline { display: flex; align-items: stretch; gap: 0.6rem; flex-wrap: wrap; margin-top: 2rem; }
+  .step { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 3px; padding: 1rem 1.1rem; flex: 1 1 160px; }
+  .step .tag { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; display: block; }
+  .step .label { font-size: 1rem; font-weight: 600; line-height: 1.3; }
+  .step .sub { font-size: 0.8rem; color: var(--ink-soft); margin-top: 0.35rem; line-height: 1.4; }
+  .step.model { border-top: 3px solid var(--model); } .step.model .tag { color: var(--model); }
+  .step.code { border-top: 3px solid var(--code); } .step.code .tag { color: var(--code); }
+  .step.reasoning { border-top: 3px solid var(--reasoning); } .step.reasoning .tag { color: var(--reasoning); }
+  .step.human { border-top: 3px solid var(--human); } .step.human .tag { color: var(--human); }
+  .arrow { display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-size: 1.2rem; flex: 0 0 auto; }
+  @media (max-width: 640px) { .pipeline { flex-direction: column; } .arrow { transform: rotate(90deg); padding: 0.2rem 0; } }
+
+  /* levels rows */
+  .maplist { margin-top: 1.8rem; display: flex; flex-direction: column; gap: 0.7rem; }
+  .maprow { display: grid; grid-template-columns: 7rem 4rem 1fr; gap: 1rem; align-items: baseline; font-size: 0.98rem; border-top: 1px solid var(--line); padding-top: 0.8rem; }
+  .maprow .phase { font-weight: 600; }
+  .maprow .lvl { font-family: var(--font-mono); font-size: 0.85rem; }
+  .maprow .desc { color: var(--ink-soft); line-height: 1.5; }
+  @media (max-width: 640px) { .maprow { grid-template-columns: 1fr; gap: 0.15rem; } }
+
+  .thesis { font-family: var(--font-display); font-size: clamp(1.4rem, 2.8vw, 2rem); line-height: 1.4; color: var(--ink); max-width: 30ch; margin-top: 1.2rem; }
+  .close-line { height: 1px; background: var(--line-strong); width: 3rem; margin: 1.8rem 0; }
+  .cover-mark { font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-faint); margin-top: 2.8rem; display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  a.demo-link { color: var(--model); font-weight: 600; }
+  .scroll-cue { position: absolute; bottom: 2.2rem; left: calc(8vw + 40px); font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); letter-spacing: 0.08em; }
+</style>
+
+<div class="progress-top" id="progressTop"></div>
+<nav class="rail" id="rail" aria-label="Slide navigation"></nav>
+
+<div class="deck" id="deck">
+
+  <!-- 0 COVER -->
+  <section class="slide" data-layer="ink" id="c0">
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--ink-faint)"></span>Executive brief — 6 slides, 2 minutes</div>
+      <h1 style="font-size:clamp(2.1rem,4.6vw,3.4rem); line-height:1.12; margin-top:1rem; max-width:16ch;">Statistics decide how much. An agent decides what to do about it.</h1>
+      <p class="lede">A Bayesian model recommends the budget split. A human-gated AI layer turns that into real campaigns — live against Google Ads and Meta Ads, nothing spends without an approval click.</p>
+      <div class="cover-mark">
+        <span>Sameer · MBA (IPMX)</span>
+        <span>Bayesian MMM + agentic Google/Meta Ads system</span>
+      </div>
+    </div>
+    <div class="scroll-cue">scroll ↓</div>
+  </section>
+
+  <!-- 1 THE SYSTEM IN FOUR MOVES -->
+  <section class="slide" data-layer="model" id="c1">
+    <div class="slide-num">01 / 05</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--model)"></span>How it works</div>
+      <h2 class="headline">Four moves. One rule: no money without a human.</h2>
+      <div class="pipeline">
+        <div class="step model"><span class="tag">infers</span><div class="label">Bayesian model</div><div class="sub">reads history, estimates channel ROI with honest uncertainty</div></div>
+        <div class="arrow">→</div>
+        <div class="step code"><span class="tag">optimizes</span><div class="label">Deterministic engine</div><div class="sub">computes one budget split, auditable and reproducible</div></div>
+        <div class="arrow">→</div>
+        <div class="step reasoning"><span class="tag">drafts</span><div class="label">LLM agent</div><div class="sub">turns the split into a real campaign, in plain language</div></div>
+        <div class="arrow">→</div>
+        <div class="step human"><span class="tag">approves</span><div class="label">A person</div><div class="sub">clicks approve — only then does anything real happen</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 PROOF -->
+  <section class="slide" data-layer="code" id="c2">
+    <div class="slide-num">02 / 05</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--code)"></span>Proof, not a pitch</div>
+      <h2 class="headline">Shipped and verified, not a mockup.</h2>
+      <div class="stats">
+        <div class="stat"><div class="num">$307,995/wk</div><div class="cap">largest reallocation the model found — the social channel, +75% vs. today</div></div>
+        <div class="stat"><div class="num">2</div><div class="cap">ad platforms live — Google Ads and Meta Ads, same approval-gated pattern</div></div>
+        <div class="stat"><div class="num">37 / 37</div><div class="cap">tests passing; every write path checked against a real account</div></div>
+        <div class="stat"><div class="num">0</div><div class="cap">real actions ever taken without a human approving first</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 ETHOS -->
+  <section class="slide" data-layer="reasoning" id="c3">
+    <div class="slide-num">03 / 05</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--reasoning)"></span>The ethos</div>
+      <h2 class="headline">We name exactly what each part is allowed to do.</h2>
+      <p class="lede">No exaggerated "autonomous AI" claims — every component is labeled at the maturity level it actually operates at.</p>
+      <div class="maplist">
+        <div class="maprow"><div class="phase">Planner</div><div class="lvl" style="color:var(--code)">L1</div><div class="desc">one structured call drafts a paused campaign — no autonomy claimed</div></div>
+        <div class="maprow"><div class="phase">Analyst</div><div class="lvl" style="color:var(--reasoning)">L2</div><div class="desc">chooses its own read-only tools to answer a question</div></div>
+        <div class="maprow"><div class="phase">Operator</div><div class="lvl" style="color:var(--human)">L3</div><div class="desc">proposes a change — a human approves every single one</div></div>
+      </div>
+      <p class="body-text" style="margin-top:1.6rem"><strong>The honest gap:</strong> our tests check that the code works. We don't yet score whether the AI's judgment was actually good — that's the next investment, named here rather than hidden.</p>
+    </div>
+  </section>
+
+  <!-- 4 THE MOAT -->
+  <section class="slide" data-layer="ink" id="c4">
+    <div class="slide-num">04 / 05</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--model)"></span>The moat</div>
+      <h2 class="headline">The moat isn't a clever prompt.</h2>
+      <p class="thesis">Anyone can wire an LLM to an ad API and call it autonomous. The rare, defensible part is knowing exactly which decision belongs to statistics, which to the model's reasoning, and which must stay with a person — then actually shipping that discipline instead of the flashy version.</p>
+    </div>
+  </section>
+
+  <!-- 5 NEXT + CLOSE -->
+  <section class="slide" data-layer="ink" id="c5">
+    <div class="slide-num">05 / 05</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--human)"></span>What's next</div>
+      <h2 class="headline">Three moves in progress.</h2>
+      <p class="body-text"><strong>1.</strong> An eval harness that scores decision quality, not just code correctness.<br/>
+      <strong>2.</strong> Meta Ads final write step, pending a payment method that clears region/currency checks.<br/>
+      <strong>3.</strong> A feedback loop that closes real outcomes back into the model.</p>
+      <div class="close-line"></div>
+      <p class="body-text">Live product: <a class="demo-link" href="https://mmm-ads-agent-818953231119.us-central1.run.app">mmm-ads-agent-818953231119.us-central1.run.app</a></p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var rail = document.getElementById('rail');
+    var progressTop = document.getElementById('progressTop');
+    var layerColor = { model: 'var(--model)', code: 'var(--code)', reasoning: 'var(--reasoning)', human: 'var(--human)', ink: 'var(--ink-faint)' };
+
+    slides.forEach(function (slide, i) {
+      var btn = document.createElement('button');
+      var layer = slide.getAttribute('data-layer') || 'ink';
+      btn.style.background = layerColor[layer] || 'var(--ink-faint)';
+      btn.setAttribute('aria-label', 'Go to section ' + (i + 1));
+      btn.addEventListener('click', function () { slide.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+      rail.appendChild(btn);
+    });
+
+    var railButtons = Array.prototype.slice.call(rail.querySelectorAll('button'));
+    var inners = Array.prototype.slice.call(document.querySelectorAll('.slide-inner'));
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) { if (entry.isIntersecting) entry.target.classList.add('in-view'); });
+    }, { threshold: 0.2 });
+    inners.forEach(function (el) { io.observe(el); });
+    setTimeout(function () { inners.forEach(function (el) { el.classList.add('in-view'); }); }, 1200);
+
+    var active = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var idx = slides.indexOf(entry.target);
+          railButtons.forEach(function (b, j) { b.classList.toggle('active', j === idx); });
+        }
+      });
+    }, { threshold: 0.55 });
+    slides.forEach(function (s) { active.observe(s); });
+
+    var deck = document.getElementById('deck');
+    deck.addEventListener('scroll', function () {
+      var pct = (deck.scrollTop / (deck.scrollHeight - deck.clientHeight)) * 100;
+      progressTop.style.width = pct + '%';
+    });
+
+    document.addEventListener('keydown', function (e) {
+      var current = slides.findIndex(function (s) {
+        var r = s.getBoundingClientRect();
+        return r.top > -10 && r.top < window.innerHeight / 2;
+      });
+      if (current === -1) current = 0;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        slides[Math.min(current + 1, slides.length - 1)].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        slides[Math.max(current - 1, 0)].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  })();
+</script>

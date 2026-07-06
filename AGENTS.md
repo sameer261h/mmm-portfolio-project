@@ -48,5 +48,10 @@ placement/portfolio project. He does NOT code. Python is rusty/minimal.
 
 1. Bayesian MMM (primary) — `notebooks/01_data_exploration.ipynb` then
    `notebooks/02_build_mmm.ipynb`. Full detail in README.md and docs/LEARNING_GUIDE.md.
-2. Google Ads agent (secondary) — plan in `GOOGLE_ADS_AGENT_PLAN.md`. Not started yet
-   as of 2026-07-03; check its own status log before assuming any phase is done.
+2. Agentic ads system (secondary) — Google Ads (plan + status in
+   `GOOGLE_ADS_AGENT_PLAN.md`) and Meta Ads Phase 6 (plan + status in
+   `META_ADS_AGENT_PLAN.md`). Both have live-verified real API writes as of
+   2026-07-06 (Google: Search + PMax fully verified; Meta: Campaign/Ad
+   Set/Ad Creative verified, final Ad object blocked on an external
+   payment-method/region constraint). Always check each plan file's own status
+   log rather than assuming from this file — it moves faster than AGENTS.md does.

@@ -257,14 +257,15 @@ if st.session_state.change_ticket:
             st.info("Change rejected -- nothing was applied.")
 
 st.divider()
-st.subheader("Meta Ads (Phase 6, unverified)")
+st.subheader("Meta Ads (Phase 6)")
 st.caption(
     "Activates the MMM's `social` channel recommendation ($307,995/week, +75% vs. "
     "current -- the strongest growth signal of any channel), which the Google Ads "
     "flow above never touches. Same paused-only, human-approval pattern as Google "
-    "Ads. Unlike Google, Meta has no free test account -- real writes are blocked "
-    "until Sameer creates a Business Manager, App, Ad Account, and Page (see "
-    "META_ADS_AGENT_PLAN.md), so this defaults to mock mode everywhere it runs."
+    "Ads. Campaign, Ad Set, and Ad Creative creation are live-verified against a "
+    "real Meta ad account; final Ad-object creation is code-complete but blocked "
+    "on a payment-method/region requirement outside this codebase's control (see "
+    "META_ADS_AGENT_PLAN.md). Defaults to mock mode everywhere this UI runs."
 )
 
 with st.sidebar:

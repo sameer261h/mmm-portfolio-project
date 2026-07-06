@@ -1,0 +1,802 @@
+<meta charset="utf-8">
+<title>Where Statistics Ends and Judgment Begins</title>
+<script>document.documentElement.classList.add('js');</script>
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+  }
+
+  :root {
+    --paper: #eff1ec;
+    --paper-raised: #e7eae3;
+    --ink: #16211f;
+    --ink-soft: #4b5754;
+    --ink-faint: #7a847f;
+    --model: #1f6b68;
+    --model-tint: #d7e6e4;
+    --reasoning: #9c6a2a;
+    --reasoning-tint: #ecdfc7;
+    --human: #a8563e;
+    --human-tint: #ecdad2;
+    --code: #55606b;
+    --code-tint: #dfe2e5;
+    --line: rgba(22, 33, 31, 0.14);
+    --line-strong: rgba(22, 33, 31, 0.28);
+    --shadow: 0 1px 2px rgba(22, 33, 31, 0.06);
+
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-body: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #101715;
+      --paper-raised: #16201d;
+      --ink: #edefea;
+      --ink-soft: #a9b3ae;
+      --ink-faint: #6f7975;
+      --model: #59bcb5;
+      --model-tint: #17302e;
+      --reasoning: #e0a855;
+      --reasoning-tint: #33280f;
+      --human: #e08a70;
+      --human-tint: #33201a;
+      --code: #a7b2ba;
+      --code-tint: #232a2e;
+      --line: rgba(237, 239, 234, 0.14);
+      --line-strong: rgba(237, 239, 234, 0.26);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #101715;
+    --paper-raised: #16201d;
+    --ink: #edefea;
+    --ink-soft: #a9b3ae;
+    --ink-faint: #6f7975;
+    --model: #59bcb5;
+    --model-tint: #17302e;
+    --reasoning: #e0a855;
+    --reasoning-tint: #33280f;
+    --human: #e08a70;
+    --human-tint: #33201a;
+    --code: #a7b2ba;
+    --code-tint: #232a2e;
+    --line: rgba(237, 239, 234, 0.14);
+    --line-strong: rgba(237, 239, 234, 0.26);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  :root[data-theme="light"] {
+    --paper: #eff1ec;
+    --paper-raised: #e7eae3;
+    --ink: #16211f;
+    --ink-soft: #4b5754;
+    --ink-faint: #7a847f;
+    --model: #1f6b68;
+    --model-tint: #d7e6e4;
+    --reasoning: #9c6a2a;
+    --reasoning-tint: #ecdfc7;
+    --human: #a8563e;
+    --human-tint: #ecdad2;
+    --code: #55606b;
+    --code-tint: #dfe2e5;
+    --line: rgba(22, 33, 31, 0.14);
+    --line-strong: rgba(22, 33, 31, 0.28);
+    --shadow: 0 1px 2px rgba(22, 33, 31, 0.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+  }
+
+  ::selection { background: var(--model); color: var(--paper); }
+
+  a { color: var(--model); }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+  }
+
+  .eyebrow .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .deck {
+    height: 100vh;
+    overflow-y: auto;
+    scroll-snap-type: y proximity;
+  }
+
+  .slide {
+    min-height: 100vh;
+    scroll-snap-align: start;
+    display: flex;
+    align-items: center;
+    padding: 6.5rem 8vw 4.5rem calc(8vw + 40px);
+    position: relative;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .slide:last-of-type { border-bottom: none; }
+
+  .slide-inner {
+    max-width: 860px;
+    width: 100%;
+  }
+
+  /* Visible by default (no-JS / JS-blocked fallback). Only when JS actually
+     runs do we opt into the hidden-then-reveal scroll animation. */
+  html.js .slide-inner {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  html.js .slide-inner.in-view { opacity: 1; transform: translateY(0); }
+
+  .slide-num {
+    position: absolute;
+    top: 2.6rem;
+    left: calc(8vw + 40px);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+  }
+
+  h2.headline {
+    font-size: clamp(1.7rem, 3.1vw, 2.5rem);
+    line-height: 1.18;
+    margin-top: 0.9rem;
+    max-width: 15ch;
+  }
+
+  .lede {
+    font-size: 1.08rem;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin-top: 1.3rem;
+  }
+
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  p.body-text {
+    font-size: 1rem;
+    line-height: 1.68;
+    color: var(--ink-soft);
+    max-width: 64ch;
+    margin: 1rem 0 0;
+  }
+
+  p.body-text strong { color: var(--ink); font-weight: 600; }
+
+  code, .mono { font-family: var(--font-mono); }
+
+  /* ---- nav rail ---- */
+  .rail {
+    position: fixed;
+    left: 1.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    z-index: 20;
+  }
+
+  .rail button {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .rail button.active { transform: scale(1.5); }
+
+  .legend {
+    position: fixed;
+    left: 1.6rem;
+    bottom: 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    z-index: 20;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 0.5em; }
+  .legend-item .sw { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+
+  .progress-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    background: var(--model);
+    z-index: 30;
+    transition: width 0.15s ease;
+  }
+
+  @media (max-width: 720px) {
+    .rail, .legend { display: none; }
+    .slide { padding: 5.5rem 6vw 3.5rem 6vw; }
+    .slide-num { left: 6vw; }
+  }
+
+  /* ---- diagrams: pipeline ---- */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 1.6rem;
+  }
+
+  .step {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.85rem 1rem;
+    flex: 1 1 150px;
+    box-shadow: var(--shadow);
+  }
+
+  .step .tag {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    display: block;
+  }
+
+  .step .label { font-size: 0.92rem; font-weight: 600; line-height: 1.3; }
+  .step .sub { font-size: 0.78rem; color: var(--ink-soft); margin-top: 0.3rem; line-height: 1.4; }
+
+  .step.model { border-top: 3px solid var(--model); }
+  .step.model .tag { color: var(--model); }
+  .step.code { border-top: 3px solid var(--code); }
+  .step.code .tag { color: var(--code); }
+  .step.reasoning { border-top: 3px solid var(--reasoning); }
+  .step.reasoning .tag { color: var(--reasoning); }
+  .step.human { border-top: 3px solid var(--human); }
+  .step.human .tag { color: var(--human); }
+
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-faint);
+    font-size: 1.1rem;
+    flex: 0 0 auto;
+    padding: 0 0.1rem;
+  }
+
+  @media (max-width: 640px) {
+    .pipeline { flex-direction: column; }
+    .arrow { transform: rotate(90deg); padding: 0.2rem 0; }
+  }
+
+  /* ---- taxonomy grid ---- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+    margin-top: 1.6rem;
+  }
+
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+
+  .cell {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--human);
+    border-radius: 2px;
+    padding: 0.8rem 1rem;
+    background: var(--paper-raised);
+  }
+
+  .cell .k {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--human);
+  }
+
+  .cell .v { font-size: 0.88rem; color: var(--ink-soft); margin-top: 0.25rem; line-height: 1.45; }
+
+  /* ---- steps list (framework) ---- */
+  .steps {
+    margin-top: 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .fstep {
+    display: grid;
+    grid-template-columns: 2.2rem 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .fstep:last-child { border-bottom: 1px solid var(--line); }
+
+  .fstep .n {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--human);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fstep .t { font-size: 0.94rem; color: var(--ink-soft); line-height: 1.55; }
+  .fstep .t strong { color: var(--ink); }
+
+  /* ---- formula block ---- */
+  .formula {
+    margin-top: 1.5rem;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1.1rem 1.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.92rem;
+    line-height: 1.9;
+    color: var(--ink);
+    overflow-x: auto;
+  }
+
+  .formula .comment { color: var(--ink-faint); }
+
+  /* ---- distribution glyph ---- */
+  .dist { width: 44px; height: 22px; flex: none; }
+  .dist path { fill: none; stroke: var(--model); stroke-width: 1.6; }
+  .dist .band { fill: var(--model); opacity: 0.16; stroke: none; }
+
+  /* ---- compare table ---- */
+  .compare {
+    margin-top: 1.6rem;
+    overflow-x: auto;
+  }
+
+  table { border-collapse: collapse; width: 100%; font-size: 0.86rem; }
+  th, td { text-align: left; padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+  td.dim { font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-faint); white-space: nowrap; }
+  td.robyn { color: var(--ink-soft); }
+  td.pymc { color: var(--ink); }
+  td.pymc strong { color: var(--model); }
+
+  /* ---- stack (architecture) ---- */
+  .stack { margin-top: 1.8rem; display: flex; flex-direction: column; gap: 0; }
+
+  .layer {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: 1.2rem;
+    align-items: center;
+    padding: 0.9rem 0;
+    border-top: 1px dashed var(--line);
+  }
+
+  .layer:last-child { border-bottom: 1px dashed var(--line); }
+
+  .layer .name {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.6rem;
+    border-radius: 2px;
+    text-align: center;
+  }
+
+  .layer .desc { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.5; }
+  .layer .desc strong { color: var(--ink); }
+
+  .layer.model .name { background: var(--model-tint); color: var(--model); }
+  .layer.code .name { background: var(--code-tint); color: var(--code); }
+  .layer.reasoning .name { background: var(--reasoning-tint); color: var(--reasoning); }
+  .layer.human .name { background: var(--human-tint); color: var(--human); }
+
+  .feedback-note {
+    margin-top: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+
+  /* ---- mapping list ---- */
+  .maplist { margin-top: 1.6rem; display: flex; flex-direction: column; gap: 0.7rem; }
+
+  .maprow {
+    display: grid;
+    grid-template-columns: 6rem 6rem 1fr;
+    gap: 1rem;
+    align-items: baseline;
+    font-size: 0.9rem;
+    border-top: 1px solid var(--line);
+    padding-top: 0.7rem;
+  }
+
+  .maprow .phase { font-weight: 600; }
+  .maprow .lvl { font-family: var(--font-mono); font-size: 0.78rem; }
+  .maprow .desc { color: var(--ink-soft); line-height: 1.5; }
+
+  @media (max-width: 640px) {
+    .maprow { grid-template-columns: 1fr; gap: 0.15rem; }
+  }
+
+  .cover-mark {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    margin-top: 2.6rem;
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .scroll-cue {
+    position: absolute;
+    bottom: 2.2rem;
+    left: calc(8vw + 40px);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+
+  .close-line { height: 1px; background: var(--line-strong); width: 3rem; margin: 1.6rem 0; }
+
+  .thesis {
+    font-family: var(--font-display);
+    font-size: clamp(1.3rem, 2.4vw, 1.7rem);
+    line-height: 1.4;
+    color: var(--ink);
+    max-width: 24ch;
+    margin-top: 1rem;
+  }
+</style>
+
+<div class="progress-top" id="progressTop"></div>
+
+<nav class="rail" id="rail" aria-label="Slide navigation"></nav>
+<div class="legend">
+  <div class="legend-item"><span class="sw" style="background:var(--model)"></span>statistical inference</div>
+  <div class="legend-item"><span class="sw" style="background:var(--code)"></span>deterministic optimization</div>
+  <div class="legend-item"><span class="sw" style="background:var(--reasoning)"></span>LLM reasoning</div>
+  <div class="legend-item"><span class="sw" style="background:var(--human)"></span>human judgment</div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- 0: COVER -->
+  <section class="slide" data-layer="ink" id="s0">
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--ink-faint)"></span>MMM Portfolio Project — Decision Architecture Memo</div>
+      <h1 style="font-size:clamp(2.3rem,5.4vw,4rem); line-height:1.08; margin-top:1rem; max-width:14ch;">Where Statistics Ends and Judgment Begins</h1>
+      <p class="lede">What a Bayesian marketing model actually infers, where a deterministic optimizer takes over, where an LLM earns its keep, and where only a human can responsibly decide — worked through end to end, then built and shipped against real Google &amp; Meta Ads APIs.</p>
+      <div class="cover-mark">
+        <span>Sameer · MBA (IPMX)</span>
+        <span>Bayesian MMM (PyMC-Marketing) + agentic Google/Meta Ads system</span>
+      </div>
+    </div>
+    <div class="scroll-cue">scroll ↓ 12 sections</div>
+  </section>
+
+  <!-- 1: WHAT MMM INFERS -->
+  <section class="slide" data-layer="model" id="s1">
+    <div class="slide-num">01 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--model)"></span>Statistical inference</div>
+      <h2 class="headline">An MMM doesn't predict a budget. It infers response curves.</h2>
+      <p class="lede">"Predicts budget allocation" is the popular shorthand, and it's not quite right. For every channel, the model estimates a small set of physical parameters — <strong>how long an ad's effect lingers</strong> (adstock decay), <strong>how fast that channel hits diminishing returns</strong> (saturation), and <strong>how strongly spend converts to revenue</strong> (a coefficient). Each one comes out as a <strong>distribution</strong>, not a number.</p>
+      <div class="pipeline">
+        <div class="step model">
+          <span class="tag" style="color:var(--model)">estimated</span>
+          <div class="label">Adstock decay, saturation shape, coefficient — per channel</div>
+          <div class="sub">e.g. "Search's coefficient is most plausibly 0.6, but 0.1–1.4 is also consistent with the data"</div>
+        </div>
+        <div class="step model">
+          <span class="tag" style="color:var(--model)">assumed</span>
+          <div class="label">Functional form (geometric adstock, logistic saturation), priors, and stationarity</div>
+          <div class="sub">the future behaves enough like the training window to trust it</div>
+        </div>
+        <div class="step model">
+          <span class="tag" style="color:var(--model)">honest confidence</span>
+          <div class="label">A well-fit posterior — not a certainty</div>
+          <div class="sub">a credible interval accompanies every single estimate above</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2: WHERE OPTIMIZATION BEGINS -->
+  <section class="slide" data-layer="code" id="s2">
+    <div class="slide-num">02 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--code)"></span>Deterministic optimization</div>
+      <h2 class="headline">Optimization begins after inference ends.</h2>
+      <p class="lede">The Bayesian model's job stops at the response curves. A separate, ordinary, deterministic optimizer then solves a constrained problem <em>on top of</em> those curves — nothing more exotic than that, and that simplicity is deliberate: it's auditable and reproducible.</p>
+      <div class="formula"><span class="comment">// maximize expected revenue, subject to a fixed budget and business-realism bounds</span><br/>
+maximize   Σ<sub>i</sub> f<sub>i</sub>(spend<sub>i</sub>)<br/>
+subject to Σ<sub>i</sub> spend<sub>i</sub> = <span style="color:var(--model)">total_budget</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lower<sub>i</sub> ≤ spend<sub>i</sub> ≤ upper<sub>i</sub>   <span class="comment">// e.g. "can't 10x TV overnight"</span></div>
+      <p class="body-text">f<sub>i</sub> is the fitted response curve for channel i — usually evaluated at the <strong>posterior mean</strong>, which is exactly where the next section's caveat comes from.</p>
+    </div>
+  </section>
+
+  <!-- 3: WHY NOT AUTO-EXECUTE -->
+  <section class="slide" data-layer="human" id="s3">
+    <div class="slide-num">03 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--human)"></span>Human judgment</div>
+      <h2 class="headline">The optimizer's answer is a point. The truth is a neighborhood.</h2>
+      <p class="lede">Say the optimizer returns Search → ₹8L, PMax → ₹5L, Demand Gen → ₹2L, YouTube → ₹1L. Two structural reasons this isn't executed as-is:</p>
+      <div class="grid">
+        <div class="cell" style="border-left-color:var(--human)">
+          <div class="k" style="color:var(--human)">01 — the argmax is itself uncertain</div>
+          <div class="v">It's the best split <em>of an estimate</em>. Resample the posterior and the "optimal" split shifts — sometimes meaningfully. A point estimate hides that fragility.</div>
+        </div>
+        <div class="cell" style="border-left-color:var(--human)">
+          <div class="k" style="color:var(--human)">02 — it only knows what it was shown</div>
+          <div class="v">Nothing about a launch next week, a competitor's move, or a supply constraint made it into f<sub>i</sub>. See the taxonomy, next.</div>
+        </div>
+      </div>
+      <p class="body-text">Mature orgs insert a review stage because the failure is <strong>asymmetric</strong>: money moves and campaigns launch fast; unwinding a bad call is slower than reviewing it first.</p>
+    </div>
+  </section>
+
+  <!-- 4: TAXONOMY -->
+  <section class="slide" data-layer="human" id="s4">
+    <div class="slide-num">04 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--human)"></span>Human judgment</div>
+      <h2 class="headline">What lives outside the model — a taxonomy, not a shrug.</h2>
+      <p class="lede">"Ignore the recommendation, increase Search instead" can be entirely correct. Here's every category of knowledge an MMM structurally cannot have, because none of it is a column in the training data:</p>
+      <div class="grid">
+        <div class="cell"><div class="k">Commercial calendar</div><div class="v">Launches, price changes, promotions not yet in the training window</div></div>
+        <div class="cell"><div class="k">Competitive dynamics</div><div class="v">A rival's spend shift, stockout, exit, or bidding war</div></div>
+        <div class="cell"><div class="k">Creative &amp; fatigue</div><div class="v">Creative quality, audience fatigue, a refresh about to ship</div></div>
+        <div class="cell"><div class="k">Operational limits</div><div class="v">Inventory, fulfillment capacity, sales team bandwidth for a demand spike</div></div>
+        <div class="cell"><div class="k">Contractual &amp; partner</div><div class="v">Minimum spend commitments, negotiated rates, exclusivity terms</div></div>
+        <div class="cell"><div class="k">Brand &amp; governance</div><div class="v">Brand-safety limits, legal/political restrictions, priorities the model can't see in "revenue"</div></div>
+        <div class="cell"><div class="k">Regime shift</div><div class="v">Platform algorithm changes, macro shocks, anything the training window never contained</div></div>
+        <div class="cell"><div class="k">Everything else, honestly</div><div class="v">If it isn't a column, it isn't in f<sub>i</sub> — full stop</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5: DISAGREEMENT FRAMEWORK -->
+  <section class="slide" data-layer="human" id="s5">
+    <div class="slide-num">05 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--human)"></span>Human judgment</div>
+      <h2 class="headline">MMM says A, a person says B. Neither side wins by default.</h2>
+      <p class="lede">Not "obey the model" and not "obey the human" — an actual arbitration sequence:</p>
+      <div class="steps">
+        <div class="fstep"><div class="n">01</div><div class="t"><strong>Locate the claim.</strong> Does it fall in the taxonomy above — something structurally outside the model's inputs? If yes, the human's context wins by design, and gets logged as a labeled factor for the next refresh.</div></div>
+        <div class="fstep"><div class="n">02</div><div class="t"><strong>Size it against the interval.</strong> If it's a claim about something the model <em>did</em> see, check whether it sits inside the credible interval. Inside it isn't real disagreement — it's a preference within the model's own uncertainty. Proceed, and log it.</div></div>
+        <div class="fstep"><div class="n">03</div><div class="t"><strong>Outside the interval, no taxonomy story: test, don't argue.</strong> Run the smaller version as a bounded experiment or holdout before committing the full swing. Uncertainty becomes an action, not a stalemate.</div></div>
+        <div class="fstep"><div class="n">04</div><div class="t"><strong>Log every override, either direction.</strong> It becomes a labeled example the next model iteration learns from — this is literally what <code>guardrails.py</code>'s per-change cap enforces in the shipped system: no single override, human or automated, moves further than a bounded, logged step.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6: WHERE THE LLM FITS -->
+  <section class="slide" data-layer="reasoning" id="s6">
+    <div class="slide-num">06 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--reasoning)"></span>LLM reasoning</div>
+      <h2 class="headline">The LLM never touches the arithmetic.</h2>
+      <p class="lede">The constrained optimization in section 02 stays deterministic — same inputs, same output, every time, which is what makes it auditable. The LLM's real job sits one layer up: <strong>translate, explain, draft, and ask</strong> — never compute the number itself.</p>
+      <div class="pipeline">
+        <div class="step model"><span class="tag">infers</span><div class="label">Bayesian MMM</div><div class="sub">response curves + uncertainty</div></div>
+        <div class="arrow">→</div>
+        <div class="step code"><span class="tag">computes</span><div class="label">Deterministic optimizer</div><div class="sub">constrained budget split</div></div>
+        <div class="arrow">→</div>
+        <div class="step reasoning"><span class="tag">translates</span><div class="label">LLM</div><div class="sub">drafts campaigns, explains reasoning, flags contradictions, asks when unclear</div></div>
+        <div class="arrow">→</div>
+        <div class="step human"><span class="tag">decides</span><div class="label">Human</div><div class="sub">approves, rejects, or asks for more</div></div>
+      </div>
+      <p class="body-text">Most "AI marketing agent" demos skip this separation and let the model output a budget number directly — the moment that happens, the number stops being reproducible or explainable. That's the mistake this system was built to avoid.</p>
+    </div>
+  </section>
+
+  <!-- 7: STACK RIGOR -->
+  <section class="slide" data-layer="model" id="s7">
+    <div class="slide-num">07 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--model)"></span>Statistical inference</div>
+      <h2 class="headline">Why PyMC-Marketing over Robyn — the decisions it unlocks, not a feature list.</h2>
+      <div class="compare">
+        <table>
+          <tr><th>Dimension</th><th>Robyn</th><th>PyMC-Marketing</th></tr>
+          <tr><td class="dim">architecture</td><td class="robyn">ridge regression + evolutionary hyperparameter search</td><td class="pymc">one generative <strong>probability model</strong>, every part a random variable</td></tr>
+          <tr><td class="dim">priors</td><td class="robyn">hard search bounds — a yes/no fence</td><td class="pymc">graded belief — <strong>"probably 4–8 weeks, rarely 40"</strong></td></tr>
+          <tr><td class="dim">uncertainty</td><td class="robyn">model-selection spread across a Pareto front</td><td class="pymc">one coherent posterior — <strong>every derived number gets a real range</strong></td></tr>
+          <tr><td class="dim">hierarchical models</td><td class="robyn">none — one flat regression</td><td class="pymc">partial pooling — <strong>a data-poor region borrows strength, not noise</strong></td></tr>
+          <tr><td class="dim">unlocks</td><td class="robyn">one clean planning-cycle number, fast</td><td class="pymc"><strong>risk-aware, region-aware, defensible-assumption</strong> decisions</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8: WHY HUMANS STILL MATTER -->
+  <section class="slide" data-layer="human" id="s8">
+    <div class="slide-num">08 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--human)"></span>Human judgment</div>
+      <h2 class="headline">A better posterior shrinks known unknowns. It cannot touch unknown ones.</h2>
+      <p class="lede">Suppose the model gets dramatically better — tighter intervals, cleaner MCMC, more data. Three reasons a human still has to be in the loop, and one honest reason they sometimes shouldn't override it:</p>
+      <div class="steps">
+        <div class="fstep"><div class="n">1</div><div class="t"><strong>The ceiling on uncertainty.</strong> More precision narrows the credible interval on channels already in the model. It teaches the model nothing about a competitor's unannounced launch — see section 04's taxonomy, which doesn't shrink as the math improves.</div></div>
+        <div class="fstep"><div class="n">2</div><div class="t"><strong>Accountability.</strong> A real budget decision needs an owner who can be held responsible for the outcome. That cannot be assigned to a posterior distribution.</div></div>
+        <div class="fstep"><div class="n">3</div><div class="t"><strong>Model risk is not statistical risk.</strong> A sophisticated model can still be wrong in ways it can't self-diagnose — data drift, a silently broken pipeline, a regime change. A second, independent check is a control, not distrust of the math.</div></div>
+        <div class="fstep"><div class="n">✕</div><div class="t"><strong>When the human should stand down:</strong> an unsubstantiated hunch, contradicted by strong, well-identified evidence the model <em>did</em> see, with no taxonomy story behind it. That's when the person updates their belief — not the system.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9: IDEAL ARCHITECTURE -->
+  <section class="slide" data-layer="ink" id="s9">
+    <div class="slide-num">09 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--ink)"></span>The full architecture</div>
+      <h2 class="headline">Designed once, end to end — this is the actual shape.</h2>
+      <div class="stack">
+        <div class="layer model"><div class="name">infers</div><div class="desc"><strong>Bayesian MMM</strong> — historical spend/revenue → response curves + a full posterior over every parameter</div></div>
+        <div class="layer code"><div class="name">optimizes</div><div class="desc"><strong>Deterministic constrained optimizer</strong> — posterior mean curves → one budget split, bounded by business-realism constraints</div></div>
+        <div class="layer reasoning"><div class="name">reasons</div><div class="desc"><strong>LLM planner / analyst / operator</strong> — translates the split into concrete campaigns, answers questions by choosing which read-only tool to call, drafts proposed changes</div></div>
+        <div class="layer human"><div class="name">decides</div><div class="desc"><strong>Human approval gate</strong> — every write is reviewed; nothing real happens without an explicit approve</div></div>
+        <div class="layer code"><div class="name">executes</div><div class="desc"><strong>Real API calls</strong> — Google Ads + Meta Ads, campaigns always created paused, guardrails enforced in code, not in the prompt</div></div>
+      </div>
+      <div class="feedback-note">↩ outcomes and every logged override feed back into the next model refresh — the loop closes, it doesn't dead-end</div>
+    </div>
+  </section>
+
+  <!-- 10: WHAT WE BUILT -->
+  <section class="slide" data-layer="ink" id="s10">
+    <div class="slide-num">10 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--ink)"></span>Not a slide — a working repo</div>
+      <h2 class="headline">The diagram above is this project, not a proposal.</h2>
+      <div class="maplist">
+        <div class="maprow"><div class="phase">Planner</div><div class="lvl" style="color:var(--code)">L1</div><div class="desc">single structured call from the MMM's budget split to a paused campaign draft — no tool loop yet, named honestly as L1</div></div>
+        <div class="maprow"><div class="phase">Analyst</div><div class="lvl" style="color:var(--reasoning)">L2</div><div class="desc">the model itself decides which read-only tool to call, reads the result, and can chain a second call before answering</div></div>
+        <div class="maprow"><div class="phase">Operator</div><div class="lvl" style="color:var(--human)">L3</div><div class="desc">observes account state, plans a proposal — a human approves or rejects before anything real applies</div></div>
+        <div class="maprow"><div class="phase">Execution</div><div class="lvl" style="color:var(--code)">live</div><div class="desc">verified against a real Google Ads test account; Meta Ads verified the same way for Campaign/Ad Set/Ad Creative, with the final Ad object blocked only by an external payment-method/region requirement</div></div>
+      </div>
+      <p class="body-text" style="margin-top:1.4rem"><strong>The honest gap:</strong> 37 tests check code correctness — schema validation, guardrail math, mock writes. None of them yet score whether a tool choice or a proposed action was actually <em>good</em>. Named here on purpose, not glossed over.</p>
+    </div>
+  </section>
+
+  <!-- 11: THE MOAT -->
+  <section class="slide" data-layer="ink" id="s11">
+    <div class="slide-num">11 / 11</div>
+    <div class="slide-inner">
+      <div class="eyebrow"><span class="dot" style="background:var(--model)"></span>The moat</div>
+      <h2 class="headline">The moat isn't a clever prompt. It's the discipline in sections 02–08.</h2>
+      <p class="thesis">It is easy to let an LLM output a budget number and call it "agentic." It is much harder — and much rarer — to know exactly which layer a decision belongs in, and build the boring, gated, auditable version instead of the flashy autonomous one.</p>
+      <div class="close-line"></div>
+      <p class="body-text"><strong>Next:</strong> an eval harness that scores decision quality, not just code correctness · Meta Ads' final write step once a region-compatible payment method is in place · the Phase 5 optimizer loop that closes the feedback arrow above into a real, running cycle.</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var rail = document.getElementById('rail');
+    var progressTop = document.getElementById('progressTop');
+    var layerColor = { model: 'var(--model)', code: 'var(--code)', reasoning: 'var(--reasoning)', human: 'var(--human)', ink: 'var(--ink-faint)' };
+
+    slides.forEach(function (slide, i) {
+      var btn = document.createElement('button');
+      var layer = slide.getAttribute('data-layer') || 'ink';
+      btn.style.background = layerColor[layer] || 'var(--ink-faint)';
+      btn.setAttribute('aria-label', 'Go to section ' + (i + 1));
+      btn.addEventListener('click', function () {
+        slide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      rail.appendChild(btn);
+    });
+
+    var railButtons = Array.prototype.slice.call(rail.querySelectorAll('button'));
+    var inners = Array.prototype.slice.call(document.querySelectorAll('.slide-inner'));
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) entry.target.classList.add('in-view');
+      });
+    }, { threshold: 0.2 });
+    inners.forEach(function (el) { io.observe(el); });
+
+    // Safety net: if the observer never fires in some host environment,
+    // don't let content stay hidden forever.
+    setTimeout(function () {
+      inners.forEach(function (el) { el.classList.add('in-view'); });
+    }, 1200);
+
+    var active = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          var idx = slides.indexOf(entry.target);
+          railButtons.forEach(function (b, j) { b.classList.toggle('active', j === idx); });
+        }
+      });
+    }, { threshold: 0.55 });
+    slides.forEach(function (s) { active.observe(s); });
+
+    var deck = document.getElementById('deck');
+    deck.addEventListener('scroll', function () {
+      var pct = (deck.scrollTop / (deck.scrollHeight - deck.clientHeight)) * 100;
+      progressTop.style.width = pct + '%';
+    });
+
+    document.addEventListener('keydown', function (e) {
+      var current = slides.findIndex(function (s) {
+        var r = s.getBoundingClientRect();
+        return r.top > -10 && r.top < window.innerHeight / 2;
+      });
+      if (current === -1) current = 0;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        var next = slides[Math.min(current + 1, slides.length - 1)];
+        next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        var prev = slides[Math.max(current - 1, 0)];
+        prev.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  })();
+</script>
